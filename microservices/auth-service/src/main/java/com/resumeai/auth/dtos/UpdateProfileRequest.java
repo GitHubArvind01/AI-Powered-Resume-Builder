@@ -3,16 +3,16 @@ package com.resumeai.auth.dtos;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
-public class RegisterRequest {
+@NoArgsConstructor
+public class UpdateProfileRequest {
 	@NotNull(message = "Name null not allowed")
 	private String fullName;
 	@NotNull(message = "email null not allowed")
     private String email;
-	@NotNull(message = "password null not allowed")
-    private String passwordHash;
 	@NotNull(message = "phone null not allowed")
     private String phone;
 }

@@ -16,9 +16,13 @@ spring:
 
         # ================= AUTH SERVICE =================
         - id: auth
-          uri: ${AUTH_SERVICE_URL}
+          uri: lb://AUTH-SERVICE
           predicates:
             - Path=/auth/**
+        - id: resume-service
+          uri: lb://RESUME-SERVICE
+          predicates:
+            - Path=/api/v1/resumes/**
 
   boot:
     admin:

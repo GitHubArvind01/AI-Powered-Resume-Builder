@@ -20,19 +20,17 @@ import lombok.NoArgsConstructor;
 public class User {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
-	
-	private String username;
+	private Long id;    
+    private String fullName;
     private String email;
-    private String password;
+    private String pendingEmail;
+    private String passwordHash;
+    private String phone;
     private String role;
     private String otpCode;
     private LocalDateTime otpExpiry;
-    
-    public User(String username, String email, String password, String role) {
-    	this.username = username;
-    	this.email = email;
-    	this.password = password;
-    	this.role = role;
-    }
+    private boolean isActive;
+    private String subscriptionPlan;
+
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

@@ -106,8 +106,8 @@ public class GoogleAuthService {
 					 */
 					User user = new User();
 					user.setEmail(email);
-					user.setUsername(email);
-					user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+					user.setFullName(email);
+					user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
 					user.setRole("USER");
 					userRepository.save(user);
 				}

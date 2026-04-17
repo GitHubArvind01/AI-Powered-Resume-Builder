@@ -2,6 +2,7 @@ package com.resumeai.auth.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,6 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.resumeai.auth.dtos.LoginRequest;
 import com.resumeai.auth.dtos.RegisterRequest;
+import com.resumeai.auth.dtos.UpdateProfileRequest;
+import com.resumeai.auth.dtos.UserResponseDTO;
 import com.resumeai.auth.dtos.AuthResponse;
 import com.resumeai.auth.service.UserService;
 
@@ -150,5 +153,36 @@ public class UserController {
     public ResponseEntity<String> resetPassword(@Parameter(description = "User Email", example = "ravi@gmail.com") @RequestParam String email, @Parameter(description = "New Password", example = "newpass123") @RequestParam String newPassword) {
         String response = userService.resetPassword(email, newPassword);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{email}")
+    @Operation(summary = "7. Get User by email")
+    public ResponseEntity<UserResponseDTO> getUserByEmail(@PathVariable String email) {
+        return ResponseEntity.ok(userService.getUserByEmail(email));
+    }
+
+    @PostMapping("/update-profile/{email}")
+    @Operation(
+        summary = "8a. Update Profile",
+        description = "Updates user info. NOTE: If email is changed, account becomes INACTIVE until new email is verified via OTP.",
+        requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            content = @Content(examples = @ExampleObject(value = "{\"fullName\":\"Ravi K\",\"email\":\"newravi@gmail.com\",\"phone\":\"1234567890\"}"))
+        )
+    )
+    public ResponseEntity<UserResponseDTO> updateProfile(@PathVariable String email, @RequestBody UpdateProfileRequest updateRequest) {
+        return ResponseEntity.ok(userService.updateProfile(email, updateRequest));
+    }
+    
+    @PostMapping("/verify-email-update")
+    @Operation(summary = "8b. Verify Email Update OTP", description = "Finalizes the email change after OTP verification")
+    public ResponseEntity<String> verifyEmailUpdate(@RequestParam String currentEmail, @RequestParam String otp) {
+        return ResponseEntity.ok(userService.verifyEmailUpdate(currentEmail, otp));
+    }
+
+    @PostMapping("/update-subscription")
+    @Operation(summary = "9. Update Subscription")
+    public ResponseEntity<String> updateSubscription(@RequestParam String email, @RequestParam String plan) {
+        userService.updateSubscription(email, plan);
+        return ResponseEntity.ok("Subscription updated to " + plan);
     }
 }

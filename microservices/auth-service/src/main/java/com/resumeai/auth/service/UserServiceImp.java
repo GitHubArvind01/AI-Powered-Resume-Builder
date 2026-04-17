@@ -2,62 +2,83 @@ package com.resumeai.auth.service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.resumeai.auth.dtos.LoginRequest;
 import com.resumeai.auth.dtos.RegisterRequest;
+import com.resumeai.auth.dtos.UpdateProfileRequest;
+import com.resumeai.auth.dtos.UserResponseDTO;
 import com.resumeai.auth.dtos.AuthResponse;
 import com.resumeai.auth.entity.User;
 import com.resumeai.auth.repository.UserRepository;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Service
-public class UserService {
+public class UserServiceImp implements UserService{
 	private static final SecureRandom random = new SecureRandom();
 	
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtService jwtService;
-	private final JavaMailSender mailSender;
+	private final EmailService emailService;
 
 	// register request
-	public String registerRequest(RegisterRequest registerRequest) {
+	@Transactional
+	@Override
+    public String registerRequest(RegisterRequest registerRequest) {
+        // 1. Check if user exists
+        Optional<User> userOptional = userRepository.findByEmail(registerRequest.getEmail());
 
-		// Step 1: check duplicate
-		User existingUser = userRepository.findByEmail(registerRequest.getEmail()).orElse(null);
-		if (existingUser != null) {
-			throw new RuntimeException("User already registered with this email!");
-		}
+        User user;
+        if (userOptional.isPresent()) {
+            user = userOptional.get();
 
-		// Step 2: Generate OTP
-		String otp = generateOtp();
+            // If user is already active, prevent re-registration
+            if (user.isActive()) {
+                throw new RuntimeException("User already registered with this email!");
+            }
 
-		// Step 3: Create user (NOT fully active yet)
-		User user = new User();
-		user.setUsername(registerRequest.getUsername());
-		user.setEmail(registerRequest.getEmail());
-		user.setPassword(registerRequest.getPassword()); // encode later after OTP verify
-		user.setRole(registerRequest.getRole());
+            // If user is inactive, update their info (in case they changed name/phone/pass)
+            updateUserDetails(user, registerRequest);
+        } else {
+            // Create a brand new user
+            user = new User();
+            user.setFullName(registerRequest.getFullName());
+            user.setEmail(registerRequest.getEmail());
+            user.setRole("USER");
+            user.setSubscriptionPlan("FREE");
+            user.setActive(false);
+            updateUserDetails(user, registerRequest);
+        }
 
-		user.setOtpCode(otp);
-		user.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
+        // 2. Generate and set OTP + Expiry (Refresh on every request)
+        String otp = generateOtp();
+        user.setOtpCode(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
 
-		userRepository.save(user);
+        // 3. Save to Database
+        userRepository.save(user);
 
-		// Step 4: Send email
-		sendOtpEmail(user.getEmail(), otp, "Registration OTP", "REGISTER");
+        // 4. Send Email
+        emailService.sendOtpEmail(user.getEmail(), otp, "Registration OTP", "REGISTER");
 
-		return "OTP sent to your email for verification.";
-	}
+        return "OTP sent to your email for verification.";
+    }
 
+    private void updateUserDetails(User user, RegisterRequest request) {
+        user.setFullName(request.getFullName());
+        user.setPhone(request.getPhone());
+        // here I Hash the password immediately
+        user.setPasswordHash(passwordEncoder.encode(request.getPasswordHash()));
+    }
+    
+    @Override
 	public AuthResponse registerUser(String email, String otp) {
 		User userdb = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
 
@@ -75,7 +96,7 @@ public class UserService {
 			throw new RuntimeException("OTP Expired! please try again.");
 		}
 
-		userdb.setPassword(passwordEncoder.encode(userdb.getPassword()));
+		userdb.setActive(true);
 		userdb.setOtpCode(null);
 		userRepository.save(userdb);
 		String token = jwtService.genrateToken(email);
@@ -83,13 +104,28 @@ public class UserService {
 	}
 
 	// login
+	@Override
 	public AuthResponse loginUser(LoginRequest loginRequest) {
+		/*
+		 * first we check email that exist in DB
+		 */
 		User userdb = userRepository.findByEmail(loginRequest.getEmail())
 				.orElseThrow(() -> new RuntimeException("User not found!"));
 
-		if (!passwordEncoder.matches(loginRequest.getPassword(), userdb.getPassword())) {
+		if (!passwordEncoder.matches(loginRequest.getPassword(), userdb.getPasswordHash())) {
 			throw new RuntimeException("Invalid Password!");
 		}
+		
+		/*
+		 * here - CHECK ACTIVE STATUS
+		 */
+		if(!userdb.isActive()) {
+			throw new RuntimeException("Account is not verified. Please verify your email using the OTP sent during registration.");
+		}
+		
+		/*
+		 * only Active user can login
+		 */
 		String token = jwtService.genrateToken(loginRequest.getEmail());
 		return new AuthResponse(token, "Login Success");
 	}
@@ -99,6 +135,7 @@ public class UserService {
 	 * our database then I will send 6-digit verification code to email otherwise
 	 * stop
 	 */
+	@Override
 	public String initiateForgetPassword(String email) {
 		User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
 
@@ -112,7 +149,7 @@ public class UserService {
 
 		// 3. Here I will- Call to EmailService to send 'otp' to 'email' with subject,
 		// and purpose
-		sendOtpEmail(email, otp, "Forgot Password OTP", "FORGOT_PASSWORD");
+		emailService.sendOtpEmail(email, otp, "Forgot Password OTP", "FORGOT_PASSWORD");
 
 		return "Verification code sent to your email.";
 	}
@@ -120,7 +157,7 @@ public class UserService {
 	/*
 	 * Once user get OTP then we verify that in our DB -
 	 */
-
+	@Override
 	public String verifyOtp(String email, String otp) {
 		User userdb = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
 
@@ -143,68 +180,16 @@ public class UserService {
 	/*
 	 * Finally we update the password
 	 */
+	@Override
 	public String resetPassword(String email, String newPassword) {
 		User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
 
 		// Ensure you encode the password before saving!
-		user.setPassword(passwordEncoder.encode(newPassword));
+		user.setPasswordHash(passwordEncoder.encode(newPassword));
 		user.setOtpCode(null); // Clear OTP after use
 		userRepository.save(user);
 
 		return "Password updated successfully.";
-	}
-
-	/*
-	 * This sendOtpEmail function work for all - i will add message those method
-	 * call them they send message which purpose they are calling and I will add in
-	 * that, what it take - Subject, Purpose message like- registeration new user,
-	 * forget password like that
-	 */
-	public void sendOtpEmail(String toEmail, String otp, String subject, String purpose) {
-		try {
-			MimeMessage message = mailSender.createMimeMessage();
-			MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-			helper.setTo(toEmail);
-			helper.setSubject("Secure Verification Code");
-
-			String messageText = switch (purpose) {
-				case "REGISTER" -> "Use this OTP to complete your registration. This code is valid for 5 minutes.";
-				case "FORGOT_PASSWORD" -> "Use the following code to reset your password. This code is valid for 5 minutes.";
-				default -> "Use this OTP for verification.";
-			};
-
-			// Email Template
-			String htmlContent = """
-					<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px; border-radius: 10px;">
-					    <div style="max-width: 500px; margin: auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-					        <div style="background-color: #2c3e50; padding: 20px; text-align: center;">
-					            <h1 style="color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 2px;">SECURE AUTH</h1>
-					        </div>
-					        <div style="padding: 40px; text-align: center;">
-					            <p style="color: #555; font-size: 16px;">Hello,</p>
-					            <p style="color: #555; font-size: 16px;"> <p>%s</p> </p>
-					            <div style="margin: 30px 0;">
-					                <span style="font-size: 36px; font-weight: bold; color: #2828ff; letter-spacing: 8px; padding: 10px 20px; border: 2px dashed #2828ff; border-radius: 5px; background-color: #f0f4ff;">
-					                    %s
-					                </span>
-					            </div>
-					            <p style="color: #999; font-size: 13px;">If you did not request this, please ignore this email.</p>
-					        </div>
-					        <div style="background-color: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #eee;">
-					            <p style="color: #bbb; font-size: 12px; margin: 0;">© 2026 Secure Auth Systems Inc.</p>
-					        </div>
-					    </div>
-					</div>
-					"""
-					.formatted(messageText, otp);
-
-			helper.setText(htmlContent, true); // 'true' enables HTML
-			mailSender.send(message);
-
-		} catch (MessagingException e) {
-			throw new RuntimeException("Failed to send email", e);
-		}
 	}
 	
 	/*
@@ -213,5 +198,83 @@ public class UserService {
 	private String generateOtp() {
 	    int otp = 100000 + random.nextInt(900000);
 	    return String.valueOf(otp);
+	}
+
+	@Override
+	public void updateSubscription(String email, String plan) {
+		User userdb = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
+		userdb.setSubscriptionPlan(plan);
+		userRepository.save(userdb);
+	}
+
+	@Override
+	@Transactional
+	public UserResponseDTO updateProfile(String email, UpdateProfileRequest updateUser) {
+	    User userdb = userRepository.findByEmail(email)
+	            .orElseThrow(() -> new RuntimeException("User not found!"));
+
+	    boolean isEmailChanging = !userdb.getEmail().equalsIgnoreCase(updateUser.getEmail());
+
+	    if (isEmailChanging) {
+	        // Check if the NEW email is already taken
+	        if (userRepository.findByEmail(updateUser.getEmail()).isPresent()) {
+	            throw new RuntimeException("Email already in use by another account!");
+	        }
+
+	        // Store the new email as PENDING, do not change the main email yet
+	        userdb.setPendingEmail(updateUser.getEmail());
+	        
+	        String otp = generateOtp();
+	        userdb.setOtpCode(otp);
+	        userdb.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
+	        
+	        emailService.sendOtpEmail(updateUser.getEmail(), otp, "Email Update Verification", "UPDATE_EMAIL");
+	    }
+
+	    // Update other non-sensitive fields immediately
+	    userdb.setFullName(updateUser.getFullName());
+	    userdb.setPhone(updateUser.getPhone());
+
+	    userRepository.save(userdb);
+
+	    return new UserResponseDTO(
+	            userdb.getFullName(), 
+	            userdb.getEmail(), // Still returns the old email as active
+	            userdb.getPhone(), 
+	            userdb.getRole(), 
+	            userdb.isActive(), 
+	            userdb.getSubscriptionPlan()
+	    );
+	}
+	
+	@Transactional
+	public String verifyEmailUpdate(String currentEmail, String otp) {
+	    User user = userRepository.findByEmail(currentEmail)
+	            .orElseThrow(() -> new RuntimeException("User not found!"));
+
+	    // 1. Validate OTP
+	    if (user.getOtpCode() == null || !user.getOtpCode().equals(otp)) {
+	        throw new RuntimeException("Invalid OTP!");
+	    }
+	    if (user.getOtpExpiry().isBefore(LocalDateTime.now())) {
+	        throw new RuntimeException("OTP Expired!");
+	    }
+
+	    // 2. Perform the swap
+	    if (user.getPendingEmail() != null) {
+	        user.setEmail(user.getPendingEmail());
+	        user.setPendingEmail(null); // Clear the pending status
+	        user.setOtpCode(null);
+	        userRepository.save(user);
+	        return "Email updated successfully to " + user.getEmail();
+	    }
+
+	    throw new RuntimeException("No pending email update found.");
+	}
+
+	@Override
+	public UserResponseDTO getUserByEmail(String email) {
+		User userdb = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
+		return new UserResponseDTO(userdb.getFullName(), userdb.getEmail(), userdb.getPhone(), userdb.getRole(), userdb.isActive(), userdb.getSubscriptionPlan());
 	}
 }

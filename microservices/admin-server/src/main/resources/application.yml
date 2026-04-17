@@ -1,0 +1,10 @@
+server:
+  port: ${PORT:9090}
+
+spring:
+  application:
+    name: ADMIN-SERVICE
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL}

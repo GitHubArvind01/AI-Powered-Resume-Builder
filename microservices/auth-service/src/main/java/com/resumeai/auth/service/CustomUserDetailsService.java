@@ -1,0 +1,30 @@
+package com.resumeai.auth.service;
+
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+
+import com.resumeai.auth.entity.User;
+import com.resumeai.auth.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@Service
+public class CustomUserDetailsService{
+
+    private final UserRepository repository;
+
+
+	public UserDetails loadUserByEmail(String email) {
+
+        User user = repository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return org.springframework.security.core.userdetails.User
+                .builder()
+                .username(user.getUsername())
+                .password(user.getPassword())
+                .roles(user.getRole())
+                .build();
+    }
+}

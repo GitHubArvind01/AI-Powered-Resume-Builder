@@ -25,7 +25,7 @@ public class JwtService {
 		this.signingKey = Keys.hmacShaKeyFor(SECRET.getBytes());
 	}
 	
-	public String genrateToken(String email) {
+	public String generateToken(String email) {
 		return Jwts.builder()
 				.setSubject(email)
 				.setIssuedAt(new Date())

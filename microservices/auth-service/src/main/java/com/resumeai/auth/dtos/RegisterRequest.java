@@ -12,7 +12,7 @@ public class RegisterRequest {
 	@NotNull(message = "email null not allowed")
     private String email;
 	@NotNull(message = "password null not allowed")
-    private String passwordHash;
+    private String password;
 	@NotNull(message = "phone null not allowed")
     private String phone;
 }

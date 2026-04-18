@@ -75,9 +75,9 @@ public class UserServiceImp implements UserService{
         user.setFullName(request.getFullName());
         user.setPhone(request.getPhone());
         // here I Hash the password immediately
-        user.setPasswordHash(passwordEncoder.encode(request.getPasswordHash()));
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
     }
-    
+
     @Override
 	public AuthResponse registerUser(String email, String otp) {
 		User userdb = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
@@ -99,7 +99,7 @@ public class UserServiceImp implements UserService{
 		userdb.setActive(true);
 		userdb.setOtpCode(null);
 		userRepository.save(userdb);
-		String token = jwtService.genrateToken(email);
+		String token = jwtService.generateToken(email);
 		return new AuthResponse(token, "User Register success");
 	}
 
@@ -126,7 +126,7 @@ public class UserServiceImp implements UserService{
 		/*
 		 * only Active user can login
 		 */
-		String token = jwtService.genrateToken(loginRequest.getEmail());
+		String token = jwtService.generateToken(loginRequest.getEmail());
 		return new AuthResponse(token, "Login Success");
 	}
 

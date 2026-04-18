@@ -112,14 +112,14 @@ public class GoogleAuthService {
 					userRepository.save(user);
 				}
 				
-				String token = jwtService.genrateToken(email);
-				return new AuthResponse(token,"Google login success");
-			}
-			throw new UnauthorizedException("Unauthorize authentication exception.");
+			String token = jwtService.generateToken(email);
+			return new AuthResponse(token,"Google login success");
 		}
-		catch(Exception e) {
-			log.error("Exception occur during aoogle authentication");
-			throw new UnauthorizedException("Exception occur during aoogle authentication");
+		throw new UnauthorizedException("Unauthorize authentication exception.");
+	}
+	catch(Exception e) {
+		log.error("Exception occur during google authentication");
+		throw new UnauthorizedException("Exception occur during google authentication");
 		}
 	}
 }

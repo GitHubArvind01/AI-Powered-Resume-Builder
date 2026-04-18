@@ -38,10 +38,10 @@ public class UserController {
 
     private static final String REGISTER_EXAMPLE = """
             {
-                "username":"ravi",
+                "fullName":"ravi",
                 "email":"ravi@gmail.com",
                 "password":"ravi1234",
-                "role":"USER"
+                "phone":"8970676956"
             }
             """;
 

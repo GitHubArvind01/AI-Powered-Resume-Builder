@@ -3,6 +3,7 @@ package com.resumeai.resume_section_service.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
@@ -17,6 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
  * CSRF is disabled for development and internal service communication.
  */
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
 	@Bean
@@ -30,7 +32,7 @@ public class SecurityConfig {
 							"/h2-console/**",       // H2 database console
 							"/actuator/**"          // Actuator endpoints
 						).permitAll()
-						.anyRequest().authenticated());
+						.anyRequest().permitAll());
 
 		// For H2 Console - disable frame options to allow H2 console in iframe
 		http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
@@ -38,4 +40,3 @@ public class SecurityConfig {
 		return http.build();
 	}
 }
-

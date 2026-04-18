@@ -19,10 +19,16 @@ spring:
           uri: lb://AUTH-SERVICE
           predicates:
             - Path=/auth/**
+        # ================= RESUME SERVICE =================
         - id: resume-service
           uri: lb://RESUME-SERVICE
           predicates:
             - Path=/api/v1/resumes/**
+        # ================= RESUME SECTION SERVICE =================
+        - id: resume-section-service
+          uri: lb://RESUME-SECTION-SERVICE
+          predicates:
+            - Path=/api/v1/sections/**
 
   boot:
     admin:

@@ -24,6 +24,8 @@ spring:
           uri: lb://RESUME-SERVICE
           predicates:
             - Path=/api/v1/resumes/**
+          filters:
+            - AuthenticationFilter
         # ================= RESUME SECTION SERVICE =================
         - id: resume-section-service
           uri: lb://RESUME-SECTION-SERVICE

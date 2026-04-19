@@ -12,8 +12,13 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ResumeSectionRequestDTO {
 
+    private Long sectionId;  // Optional: for bulk updates to identify which section to update
+
     @NotNull(message = "Resume ID is required")
     private Long resumeId;
+
+    @NotNull(message = "User ID is required")
+    private Long userId;
 
     @NotBlank(message = "Section type is required")
     @Pattern(regexp = "SUMMARY|EXPERIENCE|EDUCATION|SKILLS|CERTIFICATIONS|PROJECTS|LANGUAGES|VOLUNTEER|CUSTOM",

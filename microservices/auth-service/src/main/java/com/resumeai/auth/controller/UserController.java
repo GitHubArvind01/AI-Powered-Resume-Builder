@@ -1,5 +1,6 @@
 package com.resumeai.auth.controller;
 
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,13 +26,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequestMapping("/auth/user")
 @Tag(name = "User Authentication", description = "User must have to register or login for using our service")
 public class UserController {
-	
-	
+
+
 	private UserService userService;
 	public UserController(UserService userService) {
 		this.userService = userService;
 	}
-	
+
 	/*
 	 * Example Data for swagger-ui
 	 */
@@ -51,8 +52,8 @@ public class UserController {
                 "password":"ravi1234"
             }
             """;
-       
-     
+
+
     /*
      * This is for testing welcome API
      */
@@ -61,10 +62,10 @@ public class UserController {
 	public String welcome() {
 		return "welcome! It is working.";
 	}
-	
-	
+
+
 	/*
-	 * This is register request API- this will send OTP for new user 
+	 * This is register request API- this will send OTP for new user
 	 */
 	@PostMapping("/register-request")
 	 @Operation(
@@ -77,24 +78,24 @@ public class UserController {
     		})
 	    )
 	)
-	public ResponseEntity<String> registerationRequest(@RequestBody RegisterRequest registerRequest) {		
+	public ResponseEntity<String> registerationRequest(@RequestBody RegisterRequest registerRequest) {
 		return ResponseEntity.ok(userService.registerRequest(registerRequest));
 	}
-	
-	
+
+
 	/*
-	 * This method validate the email and correct OTP for new user 
+	 * This method validate the email and correct OTP for new user
 	 */
 	@PostMapping("/register-user")
 	@Operation(
 	    summary = "2. Verify OTP & Create Account",
 	    description = "User verifies OTP and account is created"
 	)
-	public ResponseEntity<AuthResponse> registerUsers(@Parameter(description = "User Email", example = "ravi@gmail.com") @RequestParam String email, @Parameter(description = "OTP received on email", example = "123456") @RequestParam String otp) {		
+	public ResponseEntity<AuthResponse> registerUsers(@Parameter(description = "User Email", example = "ravi@gmail.com") @RequestParam String email, @Parameter(description = "OTP received on email", example = "123456") @RequestParam String otp) {
 		return ResponseEntity.ok(userService.registerUser(email,otp));
 	}
-	
-	
+
+
 	/*
 	 * This is login API - it will check user exist in DB for login
 	 */
@@ -112,8 +113,8 @@ public class UserController {
 	public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {
 		return ResponseEntity.ok(userService.loginUser(loginRequest));
 	}
-	
-	
+
+
 	/*
 	 * STEP 1: Request the OTP
 	 */
@@ -126,7 +127,7 @@ public class UserController {
         String response = userService.initiateForgetPassword(email);
         return ResponseEntity.ok(response);
     }
-	
+
 
 	/*
 	 * STEP 2: Verify the OTP
@@ -140,7 +141,7 @@ public class UserController {
         String response = userService.verifyOtp(email, otp);
         return ResponseEntity.ok(response);
     }
-    
+
 
     /*
      *  STEP 3: Submit New Password
@@ -172,7 +173,7 @@ public class UserController {
     public ResponseEntity<UserResponseDTO> updateProfile(@PathVariable String email, @RequestBody UpdateProfileRequest updateRequest) {
         return ResponseEntity.ok(userService.updateProfile(email, updateRequest));
     }
-    
+
     @PostMapping("/verify-email-update")
     @Operation(summary = "8b. Verify Email Update OTP", description = "Finalizes the email change after OTP verification")
     public ResponseEntity<String> verifyEmailUpdate(@RequestParam String currentEmail, @RequestParam String otp) {

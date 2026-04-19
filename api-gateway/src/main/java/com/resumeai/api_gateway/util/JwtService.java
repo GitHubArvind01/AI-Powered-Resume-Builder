@@ -3,6 +3,7 @@ package com.resumeai.api_gateway.util;
 import java.security.Key;
 import java.util.Date;
 
+import io.jsonwebtoken.Claims;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -49,5 +50,24 @@ public class JwtService {
 	public boolean isTokenExpired(String token) {
 		return Jwts.parserBuilder().setSigningKey(signingKey).build()
 				.parseClaimsJws(token).getBody().getExpiration().before(new Date());
+	}
+
+	// Add this helper method to extract the userId specifically
+	public String extractUserId(String token) {
+		try {
+			Claims claims = Jwts.parserBuilder()
+					.setSigningKey(signingKey)
+					.build()
+					.parseClaimsJws(token)
+					.getBody();
+
+			Object userIdObj = claims.get("userId");
+			if (userIdObj != null) {
+				return userIdObj.toString();
+			}
+			return null;
+		} catch (Exception e) {
+			return null;  // Return null if userId not found
+		}
 	}
 }

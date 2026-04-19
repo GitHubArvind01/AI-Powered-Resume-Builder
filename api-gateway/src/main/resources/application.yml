@@ -31,6 +31,8 @@ spring:
           uri: lb://RESUME-SECTION-SERVICE
           predicates:
             - Path=/api/v1/sections/**
+          filters:
+            - AuthenticationFilter
 
   boot:
     admin:

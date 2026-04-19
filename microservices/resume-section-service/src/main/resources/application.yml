@@ -41,6 +41,17 @@ app:
 resume-service:
   url: ${RESUME_SERVICE_URL:http://localhost:8082}
 
+# Feign Client Configuration
+feign:
+  resume-service:
+    url: ${resume-service.url}
+  client:
+    config:
+      default:
+        connect-timeout: 5000
+        read-timeout: 5000
+        logger-level: basic
+
 server:
   port: ${PORT:8083}
   servlet:

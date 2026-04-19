@@ -1,7 +1,7 @@
 package com.resumeai.section.service.impl;
 
-import com.resumeai.resume_section_service.repository.dto.ResumeSectionRequestDTO;
-import com.resumeai.resume_section_service.repository.dto.ResumeSectionResponseDTO;
+import com.resumeai.resume_section_service.dto.ResumeSectionRequestDTO;
+import com.resumeai.resume_section_service.dto.ResumeSectionResponseDTO;
 import com.resumeai.resume_section_service.entity.ResumeSection;
 import com.resumeai.resume_section_service.exception.ResourceNotFoundException;
 import com.resumeai.resume_section_service.mapper.SectionMapper;
@@ -390,4 +390,3 @@ class SectionServiceImplTest {
         verify(sectionRepository, times(1)).findByResumeIdAndAiGenerated(1L, true);
     }
 }
-

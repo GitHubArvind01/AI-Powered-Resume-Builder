@@ -1,7 +1,7 @@
 package com.resumeai.resume_section_service.service.impl;
 
-import com.resumeai.resume_section_service.repository.dto.ResumeSectionRequestDTO;
-import com.resumeai.resume_section_service.repository.dto.ResumeSectionResponseDTO;
+import com.resumeai.resume_section_service.dto.ResumeSectionRequestDTO;
+import com.resumeai.resume_section_service.dto.ResumeSectionResponseDTO;
 import com.resumeai.resume_section_service.entity.ResumeSection;
 import com.resumeai.resume_section_service.exception.ResourceNotFoundException;
 import com.resumeai.resume_section_service.exception.SectionServiceException;
@@ -209,4 +209,3 @@ public class SectionServiceImpl implements SectionService {
         return sectionMapper.toResponseDTOList(sections);
     }
 }
-

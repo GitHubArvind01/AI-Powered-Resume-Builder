@@ -1,7 +1,7 @@
 package com.resumeai.resume_section_service.service;
 
-import com.resumeai.resume_section_service.repository.dto.ResumeSectionRequestDTO;
-import com.resumeai.resume_section_service.repository.dto.ResumeSectionResponseDTO;
+import com.resumeai.resume_section_service.dto.ResumeSectionRequestDTO;
+import com.resumeai.resume_section_service.dto.ResumeSectionResponseDTO;
 
 import java.util.List;
 

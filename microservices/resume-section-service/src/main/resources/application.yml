@@ -33,6 +33,14 @@ spring:
       enabled: true
       path: /h2-console
 
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: 3600000
+
+resume-service:
+  url: ${RESUME_SERVICE_URL:http://localhost:8082}
+
 server:
   port: ${PORT:8083}
   servlet:

@@ -13,8 +13,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ResumeRequestDTO {
 
-    @NotNull(message = "User ID cannot be null")
-    private Long userId;
 
     @NotBlank(message = "Title cannot be blank")
     private String title;

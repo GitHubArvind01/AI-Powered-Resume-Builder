@@ -17,9 +17,6 @@ public class ResumeSectionRequestDTO {
     @NotNull(message = "Resume ID is required")
     private Long resumeId;
 
-    @NotNull(message = "User ID is required")
-    private Long userId;
-
     @NotBlank(message = "Section type is required")
     @Pattern(regexp = "SUMMARY|EXPERIENCE|EDUCATION|SKILLS|CERTIFICATIONS|PROJECTS|LANGUAGES|VOLUNTEER|CUSTOM",
              message = "Invalid section type")

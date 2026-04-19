@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.resumeai.resume_service.exception.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,18 +29,30 @@ public class ResumeServiceImpl implements ResumeService {
     private final ResumeRepository resumeRepository;
 
     @Override
-    public ResumeResponseDTO createResume(ResumeRequestDTO resumeRequestDTO) {
+    public ResumeResponseDTO createResume(ResumeRequestDTO resumeRequestDTO, Long userId) {
         try {
-            log.info("Creating resume for user ID: {}", resumeRequestDTO.getUserId());
+            log.info("Creating resume for user ID: {}", userId);
 
+            // ✅ VALIDATION: Verify that userId is not null (passed from API Gateway header)
+            if (userId == null) {
+                throw new IllegalArgumentException("User ID cannot be null");
+            }
+
+            // Create resume with userId from header (Gateway has already validated the JWT)
             Resume resume = ResumeMapper.toEntity(resumeRequestDTO);
+            resume.setUserId(userId);
+            resume.setCreatedAt(LocalDateTime.now());
+            resume.setUpdatedAt(LocalDateTime.now());
+
             Resume savedResume = resumeRepository.save(resume);
 
             log.info("Resume created successfully with ID: {}", savedResume.getId());
             return ResumeMapper.toResponseDTO(savedResume);
 
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
-            log.error("Error creating resume for user ID: {}", resumeRequestDTO.getUserId(), e);
+            log.error("Error creating resume for user ID: {}", userId, e);
             throw new ResumeServiceException("Failed to create resume: " + e.getMessage(), e);
         }
     }
@@ -81,12 +94,15 @@ public class ResumeServiceImpl implements ResumeService {
     }
 
     @Override
-    public ResumeResponseDTO updateResume(Long id, ResumeRequestDTO resumeRequestDTO) {
+    public ResumeResponseDTO updateResume(Long id, ResumeRequestDTO resumeRequestDTO, Long userId) {
         try {
-            log.info("Updating resume with ID: {}", id);
+            log.info("Updating resume with ID: {} for user ID: {}", id, userId);
 
             Resume resume = resumeRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Resume not found with ID: " + id));
+
+            // ✅ SECURITY: Verify ownership before allowing update
+            verifyResumeOwnership(resume, userId);
 
             ResumeMapper.updateEntityFromDTO(resumeRequestDTO, resume);
             Resume updatedResume = resumeRepository.save(resume);
@@ -94,7 +110,7 @@ public class ResumeServiceImpl implements ResumeService {
             log.info("Resume updated successfully with ID: {}", id);
             return ResumeMapper.toResponseDTO(updatedResume);
 
-        } catch (ResourceNotFoundException e) {
+        } catch (ResourceNotFoundException | AccessDeniedException e) {
             throw e;
         } catch (Exception e) {
             log.error("Error updating resume with ID: {}", id, e);
@@ -103,18 +119,20 @@ public class ResumeServiceImpl implements ResumeService {
     }
 
     @Override
-    public void deleteResume(Long id) {
+    public void deleteResume(Long id, Long userId) {
         try {
-            log.info("Deleting resume with ID: {}", id);
+            log.info("Deleting resume with ID: {} for user ID: {}", id, userId);
 
-            if (!resumeRepository.existsById(id)) {
-                throw new ResourceNotFoundException("Resume not found with ID: " + id);
-            }
+            Resume resume = resumeRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Resume not found with ID: " + id));
+
+            // ✅ VALIDATION 3: Verify ownership before deletion
+            verifyResumeOwnership(resume, userId);
 
             resumeRepository.deleteById(id);
             log.info("Resume deleted successfully with ID: {}", id);
 
-        } catch (ResourceNotFoundException e) {
+        } catch (ResourceNotFoundException | AccessDeniedException e) {
             throw e;
         } catch (Exception e) {
             log.error("Error deleting resume with ID: {}", id, e);
@@ -215,6 +233,24 @@ public class ResumeServiceImpl implements ResumeService {
     public Integer countResumesByUserId(Long userId) {
         log.info("Counting resumes for user ID: {}", userId);
         return resumeRepository.countByUserId(userId);
+    }
+
+
+    /**
+     * Verifies that a resume belongs to the specified user (ownership check)
+     *
+     * @param resume Resume entity
+     * @param userId User ID claiming ownership
+     * @throws AccessDeniedException if resume doesn't belong to the user
+     */
+    private void verifyResumeOwnership(Resume resume, Long userId) {
+        if (!resume.getUserId().equals(userId)) {
+            log.warn("Access denied: User ID: {} attempted to access resume ID: {} owned by user ID: {}",
+                    userId, resume.getId(), resume.getUserId());
+            throw new AccessDeniedException(
+                    "Access denied: Resume with ID " + resume.getId() + " does not belong to user ID " + userId);
+        }
+        log.debug("Ownership verified for resume ID: {} by user ID: {}", resume.getId(), userId);
     }
 }
 

@@ -9,8 +9,10 @@ public interface ResumeService {
 
     /**
      * Create a new resume
+     * @param resumeRequestDTO Resume data (without userId)
+     * @param userId User ID (extracted from X-User-Id header by API Gateway)
      */
-    ResumeResponseDTO createResume(ResumeRequestDTO resumeRequestDTO);
+    ResumeResponseDTO createResume(ResumeRequestDTO resumeRequestDTO, Long userId);
 
     /**
      * Get resume by ID
@@ -29,13 +31,18 @@ public interface ResumeService {
 
     /**
      * Update a resume
+     * @param id Resume ID
+     * @param resumeRequestDTO Updated resume data (without userId)
+     * @param userId User ID (for ownership verification)
      */
-    ResumeResponseDTO updateResume(Long id, ResumeRequestDTO resumeRequestDTO);
+    ResumeResponseDTO updateResume(Long id, ResumeRequestDTO resumeRequestDTO, Long userId);
 
     /**
      * Delete a resume
+     * @param id Resume ID
+     * @param userId User ID (for ownership verification)
      */
-    void deleteResume(Long id);
+    void deleteResume(Long id, Long userId);
 
     /**
      * Duplicate (copy) a resume with "Copy of..." prefix in title

@@ -1,4 +1,4 @@
-package com.resumeai.resume_section_service.repository.dto;
+package com.resumeai.resume_section_service.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

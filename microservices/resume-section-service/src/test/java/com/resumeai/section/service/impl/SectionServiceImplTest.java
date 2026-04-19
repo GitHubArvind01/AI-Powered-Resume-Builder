@@ -89,7 +89,7 @@ class SectionServiceImplTest {
         when(sectionMapper.toResponseDTO(section)).thenReturn(responseDTO);
 
         // Act
-        ResumeSectionResponseDTO result = sectionService.addSection(requestDTO);
+        ResumeSectionResponseDTO result = sectionService.addSection(requestDTO,1L);
 
         // Assert
         assertNotNull(result);

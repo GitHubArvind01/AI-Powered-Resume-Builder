@@ -34,40 +34,43 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-
             String path = exchange.getRequest().getURI().getPath();
 
-            // 1. Check Authorization Header
             if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
                 return onError(exchange, "Missing Authorization Header", HttpStatus.UNAUTHORIZED, path);
             }
 
             String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-
-            // 2. Validate Bearer Format
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return onError(exchange, "Invalid Authorization Header Format", HttpStatus.UNAUTHORIZED, path);
+                return onError(exchange, "Invalid Format", HttpStatus.UNAUTHORIZED, path);
             }
 
             String token = authHeader.substring(7);
 
             try {
-                // 3. Extract & Validate Token
-                String email = jwtService.extractEmail(token);
-
                 if (jwtService.isTokenExpired(token)) {
                     return onError(exchange, "Token Expired", HttpStatus.UNAUTHORIZED, path);
                 }
 
-                // 4. Pass user info downstream
+                // 1. Extract Email and ID from Token
+                String email = jwtService.extractEmail(token);
+                String userId = jwtService.extractUserId(token);
+
+                // ✅ Validate userId exists in token
+                if (userId == null || userId.isEmpty()) {
+                    return onError(exchange, "UserId claim missing in token", HttpStatus.UNAUTHORIZED, path);
+                }
+
+                // 2. Inject BOTH into headers for downstream services
                 return chain.filter(exchange.mutate()
                         .request(exchange.getRequest().mutate()
                                 .header("X-User-Email", email)
+                                .header("X-User-Id", userId) // ✅ userId extracted from JWT
                                 .build())
                         .build());
 
             } catch (Exception e) {
-                return onError(exchange, "Invalid Token", HttpStatus.UNAUTHORIZED, path);
+                return onError(exchange, "Invalid Token: " + e.getMessage(), HttpStatus.UNAUTHORIZED, path);
             }
         };
     }

@@ -99,7 +99,7 @@ public class UserServiceImp implements UserService{
 		userdb.setActive(true);
 		userdb.setOtpCode(null);
 		userRepository.save(userdb);
-		String token = jwtService.generateToken(email);
+		String token = jwtService.generateToken(email, userdb.getId());
 		return new AuthResponse(token, "User Register success");
 	}
 
@@ -126,7 +126,7 @@ public class UserServiceImp implements UserService{
 		/*
 		 * only Active user can login
 		 */
-		String token = jwtService.generateToken(loginRequest.getEmail());
+		String token = jwtService.generateToken(loginRequest.getEmail(), userdb.getId());
 		return new AuthResponse(token, "Login Success");
 	}
 

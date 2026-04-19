@@ -2,6 +2,8 @@ package com.resumeai.auth.service;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,8 +27,11 @@ public class JwtService {
 		this.signingKey = Keys.hmacShaKeyFor(SECRET.getBytes());
 	}
 	
-	public String generateToken(String email) {
+	public String generateToken(String email, Long userId) {
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("userId", userId);
 		return Jwts.builder()
+				.setClaims(claims)
 				.setSubject(email)
 				.setIssuedAt(new Date())
 				.setExpiration(new Date(System.currentTimeMillis()+expirationTime))

@@ -111,8 +111,8 @@ public class GoogleAuthService {
 					user.setRole("USER");
 					userRepository.save(user);
 				}
-				
-			String token = jwtService.generateToken(email);
+				User userDB = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
+				String token = jwtService.generateToken(email, userDB.getId());
 			return new AuthResponse(token,"Google login success");
 		}
 		throw new UnauthorizedException("Unauthorize authentication exception.");

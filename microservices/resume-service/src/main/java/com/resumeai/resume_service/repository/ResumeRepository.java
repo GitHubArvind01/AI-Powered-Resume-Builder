@@ -37,13 +37,10 @@ public interface ResumeRepository extends JpaRepository<Resume, Long> {
     Optional<Resume> findByIdAndUserId(Long id, Long userId);
 
     /**
-     * Count resumes by userId
-     */
-    Integer countByUserId(Long userId);
-
-    /**
      * Find resumes by status
      */
     List<Resume> findByStatus(String status);
+
+    Integer countByUserId(Long userId);
 }
 

@@ -8,9 +8,15 @@ import java.util.List;
 public interface SectionService {
 
     /**
-     * Add a new resume section
+     * Add a new resume section with ownership validation
+     *
+     * @param requestDTO the section request data (contains resumeId)
+     * @param userId the ID of the authenticated user (extracted from X-User-Id header)
+     * @return the created section response
+     * @throws UnauthorizedException if the user does not own the resume
+     * @throws ResourceNotFoundException if the resume does not exist
      */
-    ResumeSectionResponseDTO addSection(ResumeSectionRequestDTO requestDTO);
+    ResumeSectionResponseDTO addSection(ResumeSectionRequestDTO requestDTO, Long userId);
 
     /**
      * Get section by ID

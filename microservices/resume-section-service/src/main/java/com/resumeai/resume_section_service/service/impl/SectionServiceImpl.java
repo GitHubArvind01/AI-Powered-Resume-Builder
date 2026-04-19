@@ -1,42 +1,80 @@
 package com.resumeai.resume_section_service.service.impl;
 
+import com.resumeai.resume_section_service.client.ResumeServiceClient;
 import com.resumeai.resume_section_service.dto.ResumeSectionRequestDTO;
 import com.resumeai.resume_section_service.dto.ResumeSectionResponseDTO;
 import com.resumeai.resume_section_service.entity.ResumeSection;
 import com.resumeai.resume_section_service.exception.ResourceNotFoundException;
 import com.resumeai.resume_section_service.exception.SectionServiceException;
+import com.resumeai.resume_section_service.exception.UnauthorizedException;
 import com.resumeai.resume_section_service.mapper.SectionMapper;
 import com.resumeai.resume_section_service.repository.SectionRepository;
 import com.resumeai.resume_section_service.service.SectionService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Service implementation for managing resume sections.
+ * Security Features:
+ * - Validates resume ownership via Feign Client before creating/updating sections
+ * - Extracts userId from request Header (set by API Gateway)
+ * - Throws UnauthorizedException for unauthorized operations
+ */
 @Slf4j
+@RequiredArgsConstructor
 @Service
 @Transactional
 public class SectionServiceImpl implements SectionService {
 
     private final SectionRepository sectionRepository;
     private final SectionMapper sectionMapper;
+    private final ResumeServiceClient resumeServiceClient;
 
-    public SectionServiceImpl(SectionRepository sectionRepository, SectionMapper sectionMapper) {
-        this.sectionRepository = sectionRepository;
-        this.sectionMapper = sectionMapper;
-    }
-
+    /**
+     * Add a new resume section with ownership validation.
+     * Process:
+     * 1. Validate that the resume exists and belongs to the authenticated user
+     * 2. Create the section entity
+     * 3. Save and return the response
+     *
+     * @param requestDTO the section request data
+     * @param userId the authenticated user ID from X-User-Id header
+     * @return the created section response
+     * @throws UnauthorizedException if the user does not own the Resume
+     * @throws ResourceNotFoundException if the Resume does not exist
+     */
     @Override
-    public ResumeSectionResponseDTO addSection(ResumeSectionRequestDTO requestDTO) {
-        log.info("Adding new section for resume: {}", requestDTO.getResumeId());
+    public ResumeSectionResponseDTO addSection(ResumeSectionRequestDTO requestDTO, Long userId) {
+        log.info("Adding new section for resume: {} by user: {}", requestDTO.getResumeId(), userId);
 
         try {
+            // Step 1.1: Verify that userId is not null (passed from API Gateway header)
+            if (userId == null) {
+                throw new IllegalArgumentException("User ID cannot be null");
+            }
+            // Step 1.2: Validate resume ownership via Feign Client
+            Long resumeId = requestDTO.getResumeId();
+            Boolean resumeExists = resumeServiceClient.resumeExistsForUser(resumeId, userId);
+
+            if (!resumeExists) {
+                log.warn("Unauthorized: User {} attempted to create section for resume {} they don't own", userId, resumeId);
+                throw new UnauthorizedException(
+                    String.format("Resume with ID %d does not exist or does not belong to user %d", resumeId, userId)
+                );
+            }
+
+            // Step 2: Create the section entity
             ResumeSection section = sectionMapper.toEntity(requestDTO);
             ResumeSection savedSection = sectionRepository.save(section);
 
-            log.info("Section added successfully with ID: {}", savedSection.getSectionId());
+            log.info("Section added successfully with ID: {} for resume: {}", savedSection.getSectionId(), resumeId);
             return sectionMapper.toResponseDTO(savedSection);
+        } catch (UnauthorizedException | ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Error adding section", e);
             throw new SectionServiceException("Failed to add section: " + e.getMessage());
@@ -86,18 +124,18 @@ public class SectionServiceImpl implements SectionService {
     public ResumeSectionResponseDTO updateSection(Long sectionId, ResumeSectionRequestDTO requestDTO) {
         log.info("Updating section with ID: {}", sectionId);
 
-        ResumeSection section = sectionRepository.findBySectionId(sectionId)
+        ResumeSection sections = sectionRepository.findBySectionId(sectionId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Section not found with ID: " + sectionId));
 
-        section.setSectionType(requestDTO.getSectionType());
-        section.setTitle(requestDTO.getTitle());
-        section.setContent(requestDTO.getContent());
-        section.setDisplayOrder(requestDTO.getDisplayOrder());
-        section.setIsVisible(requestDTO.getIsVisible() != null ? requestDTO.getIsVisible() : true);
-        section.setAiGenerated(requestDTO.getAiGenerated() != null ? requestDTO.getAiGenerated() : false);
+        sections.setSectionType(requestDTO.getSectionType());
+        sections.setTitle(requestDTO.getTitle());
+        sections.setContent(requestDTO.getContent());
+        sections.setDisplayOrder(requestDTO.getDisplayOrder());
+        sections.setIsVisible(requestDTO.getIsVisible() != null ? requestDTO.getIsVisible() : true);
+        sections.setAiGenerated(requestDTO.getAiGenerated() != null ? requestDTO.getAiGenerated() : false);
 
-        ResumeSection updatedSection = sectionRepository.save(section);
+        ResumeSection updatedSection = sectionRepository.save(sections);
 
         log.info("Section updated successfully with ID: {}", sectionId);
         return sectionMapper.toResponseDTO(updatedSection);

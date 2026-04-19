@@ -13,7 +13,8 @@ public class ResumeMapper {
     }
 
     /**
-     * Convert ResumeRequestDTO to Resume Entity
+     * Convert ResumeRequestDTO to Resume Entity (without userId)
+     * Note: userId is NOT included in DTO - it comes from the X-User-Id header
      */
     public static Resume toEntity(ResumeRequestDTO dto) {
         if (dto == null) {
@@ -21,14 +22,11 @@ public class ResumeMapper {
         }
 
         return Resume.builder()
-                .userId(dto.getUserId())
                 .title(dto.getTitle())
                 .content(dto.getContent())
                 .isPublic(dto.getIsPublic() != null ? dto.getIsPublic() : false)
                 .status(dto.getStatus())
                 .description(dto.getDescription())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .viewCount(0)
                 .build();
     }

@@ -32,19 +32,30 @@ public class SectionResource {
 
     /**
      * Add a new resume section
+     *
+     * ✅ SECURITY: userId is extracted from X-User-Id header (set by API Gateway)
+     * The request body contains only section-specific data, not userId
      */
     @PostMapping
-    @Operation(summary = "Add a new resume section", description = "Creates a new section for a resume")
+    @Operation(summary = "Add a new resume section", description = "Creates a new section for a resume. User ID is extracted from X-User-Id header set by API Gateway.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Section created successfully",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ResumeSectionResponseDTO.class))),
             @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Resume does not belong to authenticated user"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<ResumeSectionResponseDTO> addSection(
-            @Valid @RequestBody ResumeSectionRequestDTO requestDTO) {
-        log.info("POST /api/v1/sections - Adding new section");
-        ResumeSectionResponseDTO response = sectionService.addSection(requestDTO);
+            @Valid @RequestBody ResumeSectionRequestDTO requestDTO,
+            @Parameter(description = "User ID from X-User-Id header (set by API Gateway)", example = "1")
+            @RequestHeader("X-User-Id") Long userId) {
+
+        if (userId == null) {
+            throw new IllegalArgumentException("X-User-Id header is required");
+        }
+
+        log.info("POST /api/v1/sections - Adding new section for user: {}", userId);
+        ResumeSectionResponseDTO response = sectionService.addSection(requestDTO, userId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 

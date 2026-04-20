@@ -33,6 +33,13 @@ spring:
             - Path=/api/v1/sections/**
           filters:
             - AuthenticationFilter
+        # ================= AI-SERVICE =================
+        - id: ai-service
+          uri: lb://AI-SERVICE
+          predicates:
+            - Path=/api/v1/ai/**
+          filters:
+            - AuthenticationFilter
 
   boot:
     admin:

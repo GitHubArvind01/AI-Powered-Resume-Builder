@@ -55,7 +55,12 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
-
+  boot:
+    admin:
+      client:
+        url: ${ADMIN_SERVER_URL:http://localhost:9090}
+        instance:
+          prefer-ip: true
 management:
   endpoints:
     web:

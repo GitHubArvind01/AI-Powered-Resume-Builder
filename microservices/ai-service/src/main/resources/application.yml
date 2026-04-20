@@ -4,7 +4,68 @@ server:
 spring:
   application:
     name: AI-SERVICE
+
+  datasource:
+    url: jdbc:h2:mem:aiservice
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+  boot:
+    admin:
+      client:
+        url: ${ADMIN_SERVER_URL:http://localhost:9090}
+        instance:
+          prefer-ip: true
+
+# AI Provider Configuration
+ai:
+  provider:
+    gemini:
+      api-key: ${GEMINI_API_KEY}
+      model: gemini-2.5-flash
+      max-tokens: 2048
+    quota:
+      free-tier-monthly-limit: 100
+
 eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    enabled: true
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  swagger-ui:
+    operationsSorter: alpha
+    tagsSorter: alpha
+  api-docs:
+    path: /api-docs

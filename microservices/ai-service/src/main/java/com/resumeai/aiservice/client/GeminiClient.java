@@ -23,7 +23,7 @@ public class GeminiClient implements AiProviderClient {
 	@PostConstruct
 	public void init() {
 		if (isKeyPresent()) {
-			// Initializes the client using the API Key from your Config
+			// Initializes the client using the API Key from your Configs
 			this.client = Client.builder()
 					.apiKey(config.getGemini().getApiKey())
 					.build();

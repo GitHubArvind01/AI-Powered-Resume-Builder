@@ -14,7 +14,7 @@ public interface AiProviderClient {
 	/**
 	 * Get the model name
 	 * 
-	 * @return The model identifier
+	 * @return The model identifiers
 	 */
 	String getModelName();
 

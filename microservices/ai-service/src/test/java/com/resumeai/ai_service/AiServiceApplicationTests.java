@@ -1,9 +1,9 @@
-package com.resumeai.ai_service;
+package com.resumeai.aiservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+@SpringBootTest(classes = AiServiceApplication.class)
 class AiServiceApplicationTests {
 
 	@Test

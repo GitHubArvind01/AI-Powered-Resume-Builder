@@ -54,6 +54,13 @@ spring:
             - Path=/api/v1/payments/**
           filters:
             - AuthenticationFilter
+        # ================= EXPORT-SERVICE =================
+        - id: export-service
+          uri: lb://EXPORT-SERVICE
+          predicates:
+            - Path=/api/v1/exports/**
+          filters:
+            - AuthenticationFilter
   boot:
     admin:
       client:

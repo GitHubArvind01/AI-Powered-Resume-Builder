@@ -54,7 +54,6 @@ spring:
             - Path=/api/v1/payments/**
           filters:
             - AuthenticationFilter
-
   boot:
     admin:
       client:

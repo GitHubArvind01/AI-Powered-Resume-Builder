@@ -1,0 +1,66 @@
+server:
+  port: ${PORT:8087}
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: EXPORT-SERVICE
+  datasource:
+    url: jdbc:h2:mem:exportdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ''
+  h2:
+    console:
+      enabled: true
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+  cloud:
+    aws:
+      credentials:
+        access-key: ${AWS_ACCESS_KEY:placeholder}
+        secret-key: ${AWS_SECRET_KEY:placeholder}
+      region:
+        static: ${AWS_REGION:eu-north-1}
+      stack:
+        auto: false
+    s3:
+      bucket: ${S3_BUCKET:resume-exports-arvind}
+
+logging:
+  level:
+    root: INFO
+    com.resumeai.template_service: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true

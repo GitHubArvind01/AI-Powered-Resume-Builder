@@ -47,6 +47,13 @@ spring:
             - Path=/api/v1/templates/**
           filters:
             - AuthenticationFilter
+        # ================= PAYMENT-SERVICE =================
+        - id: payment-service
+          uri: lb://PAYMENT-SERVICE
+          predicates:
+            - Path=/api/v1/payments/**
+          filters:
+            - AuthenticationFilter
 
   boot:
     admin:

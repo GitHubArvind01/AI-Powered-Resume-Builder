@@ -40,6 +40,13 @@ spring:
             - Path=/api/v1/ai/**
           filters:
             - AuthenticationFilter
+        # ================= TEMPLATES-SERVICE =================
+        - id: template-service
+          uri: lb://TEMPLATE-SERVICE
+          predicates:
+            - Path=/api/v1/templates/**
+          filters:
+            - AuthenticationFilter
 
   boot:
     admin:

@@ -17,3 +17,13 @@ eureka:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
+
+# paymentservice yml
+app:
+  gateway-url: ${GATEWAY_URL:http://localhost:8080}
+  client-url: ${CLIENT_URL:http://localhost:4200}
+  endpoints:
+    success-path: /api/v1/payments/pay/success
+    cancel-path: /api/v1/payments/pay/cancel
+    frontend-success-path: /payment-success
+    frontend-failed-path: /payment-failed

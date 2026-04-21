@@ -3,6 +3,28 @@ spring:
   application:
     name: PAYMENT-SERVICE
 
+  # JPA/Database Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+
+  # H2 Database Configuration
+  datasource:
+    url: jdbc:h2:mem:paymentdb;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
 server:
   port: ${PORT:8086}
 
@@ -18,7 +40,7 @@ eureka:
   instance:
     prefer-ip-address: true
 
-# paymentservice yml
+# Payment Service Configuration
 app:
   gateway-url: ${GATEWAY_URL:http://localhost:8080}
   client-url: ${CLIENT_URL:http://localhost:4200}
@@ -27,3 +49,12 @@ app:
     cancel-path: /api/v1/payments/pay/cancel
     frontend-success-path: /payment-success
     frontend-failed-path: /payment-failed
+
+# Swagger/OpenAPI Configuration
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  api-docs:
+    path: /v3/api-docs
+

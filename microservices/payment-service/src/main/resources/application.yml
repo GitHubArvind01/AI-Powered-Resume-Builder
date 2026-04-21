@@ -58,3 +58,9 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+  boot:
+    admin:
+      client:
+        url: ${ADMIN_SERVER_URL:http://localhost:9090}
+        instance:
+          prefer-ip: true

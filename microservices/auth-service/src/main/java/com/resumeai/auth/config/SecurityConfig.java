@@ -12,7 +12,7 @@ public class SecurityConfig {
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.csrf(csrf -> csrf.disable()) // - THIS IS KEY!
 				.authorizeHttpRequests(authz -> authz
-						.requestMatchers("/auth/**", "/swagger-ui/**", "/h2-console/**", "/v3/api-docs/**", "/actuator/**").permitAll()
+						.requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/h2-console/**", "/v3/api-docs/**", "/actuator/**").permitAll()
 						.anyRequest().authenticated());
 		// For H2 Console
 		http.headers(headers -> headers.frameOptions(frame -> frame.disable()));

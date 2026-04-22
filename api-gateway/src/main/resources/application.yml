@@ -18,7 +18,7 @@ spring:
         - id: auth
           uri: lb://AUTH-SERVICE
           predicates:
-            - Path=/auth/**
+            - Path=/api/v1/auth/**
         # ================= RESUME SERVICE =================
         - id: resume-service
           uri: lb://RESUME-SERVICE
@@ -48,6 +48,13 @@ spring:
           filters:
             - AuthenticationFilter
         # ================= PAYMENT-SERVICE =================
+        # 1. PUBLIC CALLBACKS (No Filter)
+        - id: payment-callback-service
+          uri: lb://PAYMENT-SERVICE
+          predicates:
+            - Path=/api/v1/payments/pay/success, /api/v1/payments/pay/cancel
+
+        # 2. SECURE ENDPOINTS (Has Filter)
         - id: payment-service
           uri: lb://PAYMENT-SERVICE
           predicates:

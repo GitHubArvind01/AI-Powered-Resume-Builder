@@ -35,7 +35,11 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             String path = exchange.getRequest().getURI().getPath();
-
+            // THIS BLOCK: Skip JWT validation for PayPal callbacks
+            if (path.contains("/api/v1/payments/pay/success") ||
+                    path.contains("/api/v1/payments/pay/cancel")) {
+                return chain.filter(exchange);
+            }
             if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
                 return onError(exchange, "Missing Authorization Header", HttpStatus.UNAUTHORIZED, path);
             }

@@ -277,4 +277,10 @@ public class UserServiceImp implements UserService{
 		User userdb = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
 		return new UserResponseDTO(userdb.getFullName(), userdb.getEmail(), userdb.getPhone(), userdb.getRole(), userdb.isActive(), userdb.getSubscriptionPlan());
 	}
+
+	@Override
+	public UserResponseDTO getUserById(Long id) {
+		User userdb = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found!"));
+		return new UserResponseDTO(userdb.getFullName(), userdb.getEmail(), userdb.getPhone(), userdb.getRole(), userdb.isActive(), userdb.getSubscriptionPlan());
+	}
 }

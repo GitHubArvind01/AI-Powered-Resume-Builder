@@ -39,4 +39,6 @@ public interface UserService {
     public String verifyEmailUpdate(String currentEmail, String otp);
     
     public UserResponseDTO getUserByEmail(String email);
+
+    public UserResponseDTO getUserById(Long id);
 }

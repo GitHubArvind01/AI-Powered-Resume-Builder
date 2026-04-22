@@ -1,6 +1,7 @@
 package com.resumeai.payment_service.controller;
 
 import com.resumeai.payment_service.dto.Order;
+import com.resumeai.payment_service.dto.PaymentLinkResponse;
 import com.resumeai.payment_service.dto.PaymentResponseDTO;
 import com.resumeai.payment_service.service.PaypalService;
 import com.paypal.api.payments.Links;
@@ -68,7 +69,7 @@ public class PaypalController {
             @ApiResponse(responseCode = "400", description = "Invalid request parameters"),
             @ApiResponse(responseCode = "502", description = "PayPal API error")
     })
-    public ResponseEntity<String> payment(
+    public ResponseEntity<?> payment(
             @Valid @RequestBody Order order,
             @RequestHeader(value = "X-User-Id", required = true) Long userId) throws PayPalRESTException {
 
@@ -92,7 +93,7 @@ public class PaypalController {
         for (Links link : payment.getLinks()) {
             if (link.getRel().equals("approval_url")) {
                 log.info("Approval URL generated for user: {}", userId);
-                return ResponseEntity.ok(link.getHref());
+                return ResponseEntity.ok(new PaymentLinkResponse(link.getHref()));
             }
         }
 

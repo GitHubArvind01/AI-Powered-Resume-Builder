@@ -100,7 +100,7 @@ public class UserServiceImp implements UserService{
 		userdb.setOtpCode(null);
 		userRepository.save(userdb);
 		String token = jwtService.generateToken(email, userdb.getId());
-		return new AuthResponse(token, "User Register success");
+		return new AuthResponse(token, userdb.getRole(), userdb.getSubscriptionPlan(),"User Register success");
 	}
 
 	// login
@@ -127,7 +127,7 @@ public class UserServiceImp implements UserService{
 		 * only Active user can login
 		 */
 		String token = jwtService.generateToken(loginRequest.getEmail(), userdb.getId());
-		return new AuthResponse(token, "Login Success");
+		return new AuthResponse(token, userdb.getRole(), userdb.getSubscriptionPlan(),"Login Success");
 	}
 
 	/*

@@ -23,7 +23,7 @@ import io.swagger.v3.oas.annotations.media.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/auth/user")
+@RequestMapping("/api/v1/auth/")
 @Tag(name = "User Authentication", description = "User must have to register or login for using our service")
 public class UserController {
 

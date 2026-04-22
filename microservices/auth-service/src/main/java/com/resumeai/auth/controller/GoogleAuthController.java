@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/auth/google")
+@RequestMapping("/api/v1/auth/")
 public class GoogleAuthController {
 	
 	private final GoogleAuthService googleAuthService;

@@ -162,6 +162,12 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserByEmail(email));
     }
 
+    @GetMapping("/id/{id}")
+    @Operation(summary = "10. Get User by id")
+    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
+    }
+
     @PostMapping("/update-profile/{email}")
     @Operation(
         summary = "8a. Update Profile",

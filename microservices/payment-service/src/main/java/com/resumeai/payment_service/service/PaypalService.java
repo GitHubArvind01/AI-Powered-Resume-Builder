@@ -3,12 +3,15 @@ package com.resumeai.payment_service.service;
 import com.paypal.api.payments.*;
 import com.paypal.base.rest.APIContext;
 import com.paypal.base.rest.PayPalRESTException;
+import com.resumeai.payment_service.config.AuthClient;
 import com.resumeai.payment_service.dto.PaymentResponseDTO;
+import com.resumeai.payment_service.dto.UserResponseDTO;
 import com.resumeai.payment_service.entity.PaymentRecord;
 import com.resumeai.payment_service.exception.ResourceNotFoundException;
 import com.resumeai.payment_service.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +31,7 @@ public class PaypalService {
 
     private final APIContext apiContext;
     private final PaymentRepository paymentRepository;
+    private final AuthClient authClient;
 
     /**
      * Creates a payment in PayPal and stores the record in database
@@ -122,6 +126,21 @@ public class PaypalService {
             paymentRecord.setPayerId(payerId);
             paymentRepository.save(paymentRecord);
             log.info("Payment record updated to COMPLETED for payment ID: {}", paymentId);
+
+            try {
+                // 1. Fetch user details using the ID stored in the payment record
+                ResponseEntity<UserResponseDTO> response = authClient.getUserById(paymentRecord.getUserId());
+
+                if (response.getBody() != null) {
+                    String userEmail = response.getBody().getEmail(); // .getEmail() now works!
+
+                    // 2. Update the subscription
+                    authClient.updateSubscription(userEmail, "PRO");
+                    log.info("Successfully updated subscription to PRO for: {}", userEmail);
+                }
+            } catch (Exception e) {
+                log.error("Auth sync failed: {}", e.getMessage());
+            }
         } else {
             paymentRecord.setStatus(PaymentRecord.PaymentStatus.FAILED);
             paymentRepository.save(paymentRecord);

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -32,6 +33,53 @@ public class GlobalExceptionHandler {
 		errro.setMessage(e.getMessage());
 		errro.setPath(request.getRequestURL().toString());
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errro);
+	}
+
+	@ExceptionHandler(ForbiddenException.class)
+	public ResponseEntity<ErrorResponse> handleForbiddenException(ForbiddenException e, HttpServletRequest request){
+		ErrorResponse errro = new ErrorResponse();
+		errro.setDateTime(LocalDateTime.now());
+		errro.setStatus(HttpStatus.FORBIDDEN.value());
+		errro.setError(HttpStatus.FORBIDDEN.getReasonPhrase());
+		errro.setMessage(e.getMessage());
+		errro.setPath(request.getRequestURL().toString());
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errro);
+	}
+
+	@ExceptionHandler(ResourceNotFoundException.class)
+	public ResponseEntity<ErrorResponse> handleNotFoundException(ResourceNotFoundException e, HttpServletRequest request){
+		ErrorResponse errro = new ErrorResponse();
+		errro.setDateTime(LocalDateTime.now());
+		errro.setStatus(HttpStatus.NOT_FOUND.value());
+		errro.setError(HttpStatus.NOT_FOUND.getReasonPhrase());
+		errro.setMessage(e.getMessage());
+		errro.setPath(request.getRequestURL().toString());
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errro);
+	}
+
+	@ExceptionHandler(BadRequestException.class)
+	public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException e, HttpServletRequest request){
+		ErrorResponse errro = new ErrorResponse();
+		errro.setDateTime(LocalDateTime.now());
+		errro.setStatus(HttpStatus.BAD_REQUEST.value());
+		errro.setError(HttpStatus.BAD_REQUEST.getReasonPhrase());
+		errro.setMessage(e.getMessage());
+		errro.setPath(request.getRequestURL().toString());
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errro);
+	}
+
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException e, HttpServletRequest request){
+		ErrorResponse errro = new ErrorResponse();
+		errro.setDateTime(LocalDateTime.now());
+		errro.setStatus(HttpStatus.BAD_REQUEST.value());
+		errro.setError(HttpStatus.BAD_REQUEST.getReasonPhrase());
+		errro.setMessage(e.getBindingResult().getFieldErrors().stream()
+				.findFirst()
+				.map(error -> error.getDefaultMessage())
+				.orElse("Validation failed"));
+		errro.setPath(request.getRequestURL().toString());
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errro);
 	}
 	
 	@ExceptionHandler(Exception.class)

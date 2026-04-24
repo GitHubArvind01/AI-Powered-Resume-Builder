@@ -4,16 +4,20 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.resumeai.auth.dtos.AuthResponse;
+import com.resumeai.auth.dtos.CurrentUserResponseDTO;
+import com.resumeai.auth.dtos.EmailEvent;
 import com.resumeai.auth.dtos.LoginRequest;
 import com.resumeai.auth.dtos.RegisterRequest;
 import com.resumeai.auth.dtos.UpdateProfileRequest;
 import com.resumeai.auth.dtos.UserResponseDTO;
-import com.resumeai.auth.dtos.AuthResponse;
-import com.resumeai.auth.dtos.CurrentUserResponseDTO;
 import com.resumeai.auth.entity.User;
+import com.resumeai.auth.messaging.EmailEventProducer;
 import com.resumeai.auth.repository.UserRepository;
 
 import jakarta.transaction.Transactional;
@@ -21,13 +25,15 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Service
-public class UserServiceImp implements UserService{
+public class UserServiceImp implements UserService {
+
+	private static final Logger log = LoggerFactory.getLogger(UserServiceImp.class);
 	private static final SecureRandom random = new SecureRandom();
-	
+
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtService jwtService;
-	private final EmailService emailService;
+	private final EmailEventProducer emailEventProducer;
 
 	// register request
 	@Transactional
@@ -66,8 +72,15 @@ public class UserServiceImp implements UserService{
         // 3. Save to Database
         userRepository.save(user);
 
-        // 4. Send Email
-        emailService.sendOtpEmail(user.getEmail(), otp, "Registration OTP", "REGISTER");
+        // 4. Publish email event asynchronously via RabbitMQ (non-blocking)
+        EmailEvent event = EmailEvent.builder()
+                .to(user.getEmail())
+                .otp(otp)
+                .subject("Registration OTP")
+                .purpose("REGISTER")
+                .build();
+        emailEventProducer.publishEmailEvent(event);
+        log.info("[AUTH] Registration OTP event published for email={}", user.getEmail());
 
         return "OTP sent to your email for verification.";
     }
@@ -148,9 +161,15 @@ public class UserServiceImp implements UserService{
 		user.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
 		userRepository.save(user);
 
-		// 3. Here I will- Call to EmailService to send 'otp' to 'email' with subject,
-		// and purpose
-		emailService.sendOtpEmail(email, otp, "Forgot Password OTP", "FORGOT_PASSWORD");
+		// 3. Publish email event asynchronously via RabbitMQ (non-blocking)
+		EmailEvent event = EmailEvent.builder()
+				.to(email)
+				.otp(otp)
+				.subject("Forgot Password OTP")
+				.purpose("FORGOT_PASSWORD")
+				.build();
+		emailEventProducer.publishEmailEvent(event);
+		log.info("[AUTH] Forgot-password OTP event published for email={}", email);
 
 		return "Verification code sent to your email.";
 	}
@@ -229,8 +248,16 @@ public class UserServiceImp implements UserService{
 	        userdb.setOtpCode(otp);
 	        userdb.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
 	        
-	        emailService.sendOtpEmail(updateUser.getEmail(), otp, "Email Update Verification", "UPDATE_EMAIL");
-	    }
+        // Publish email event asynchronously via RabbitMQ (non-blocking)
+        EmailEvent event = EmailEvent.builder()
+                .to(updateUser.getEmail())
+                .otp(otp)
+                .subject("Email Update Verification")
+                .purpose("UPDATE_EMAIL")
+                .build();
+        emailEventProducer.publishEmailEvent(event);
+        log.info("[AUTH] Email-update OTP event published for pendingEmail={}", updateUser.getEmail());
+    }
 
 	    // Update other non-sensitive fields immediately
 	    userdb.setFullName(updateUser.getFullName());

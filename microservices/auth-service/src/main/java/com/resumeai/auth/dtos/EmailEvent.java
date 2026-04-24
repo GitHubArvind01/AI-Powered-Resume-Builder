@@ -22,12 +22,15 @@ public class EmailEvent {
     /** OTP code to embed in the email body */
     private String otp;
 
+    /** Optional plain-text message for non-OTP emails */
+    private String message;
+
     /** Email subject line */
     private String subject;
 
     /**
      * Describes why the email is being sent.
-     * Allowed values: REGISTER, FORGOT_PASSWORD, UPDATE_EMAIL
+     * Allowed values: REGISTER, FORGOT_PASSWORD, UPDATE_EMAIL, USER_DELETED, USER_DEACTIVATED
      */
     private String purpose;
 }

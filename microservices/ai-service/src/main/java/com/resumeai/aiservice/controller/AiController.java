@@ -1,6 +1,7 @@
 package com.resumeai.aiservice.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -60,6 +63,38 @@ public class AiController {
 		AiRequestDTO response = aiService.generateSummary(request.getUserId(), request.getResumeId(),
 				request.getResumeContent());
 		return ResponseEntity.status(HttpStatus.OK).body(response);
+	}
+
+	@PostMapping("/improve")
+	@Operation(summary = "Improve resume content",
+			description = "Client-friendly endpoint used by the Angular editor to enhance resume text.")
+	public ResponseEntity<ImproveContentResponse> improveContent(@Valid @RequestBody ImproveContentRequest request)
+			throws Exception {
+		log.info("Improving content for user: {}, resumeId: {}, type: {}", request.getUserId(), request.getResumeId(),
+				request.getType());
+
+		AiRequestDTO response = switch (request.getType()) {
+			case "summary" -> aiService.generateSummary(request.getUserId(), request.getResumeId(), request.getText());
+			case "bullets" -> aiService.generateBullets(request.getUserId(), request.getResumeId(), request.getText());
+			case "skills" -> aiService.extractSkills(request.getUserId(), request.getResumeId(), request.getText());
+			default -> aiService.improveResume(request.getUserId(), request.getResumeId(), request.getText());
+		};
+
+		return ResponseEntity.ok(new ImproveContentResponse(
+				request.getText(),
+				response.getAiResponse(),
+				List.of("Improved with " + response.getModel()),
+				0.95));
+	}
+
+	@GetMapping("/usage/{userId}")
+	@Operation(summary = "Get AI usage summary", description = "Returns used and remaining AI quota for the current month.")
+	public ResponseEntity<Map<String, Integer>> getUsage(@PathVariable Long userId) {
+		QuotaDTO quota = aiService.getQuotaInfo(userId);
+		return ResponseEntity.ok(Map.of(
+				"usage", quota.getUsedQuota(),
+				"remaining", quota.getRemainingQuota(),
+				"total", quota.getTotalMonthlyQuota()));
 	}
 
 	@PostMapping("/generate-bullets")
@@ -185,6 +220,87 @@ public class AiController {
 
 		public void setResumeContent(String resumeContent) {
 			this.resumeContent = resumeContent;
+		}
+	}
+
+	public static class ImproveContentRequest {
+		@NotNull
+		private Long userId;
+		private Long resumeId;
+		@NotBlank
+		private String text;
+		@NotBlank
+		private String type;
+		private String context;
+
+		public Long getUserId() {
+			return userId;
+		}
+
+		public void setUserId(Long userId) {
+			this.userId = userId;
+		}
+
+		public Long getResumeId() {
+			return resumeId;
+		}
+
+		public void setResumeId(Long resumeId) {
+			this.resumeId = resumeId;
+		}
+
+		public String getText() {
+			return text;
+		}
+
+		public void setText(String text) {
+			this.text = text;
+		}
+
+		public String getType() {
+			return type;
+		}
+
+		public void setType(String type) {
+			this.type = type;
+		}
+
+		public String getContext() {
+			return context;
+		}
+
+		public void setContext(String context) {
+			this.context = context;
+		}
+	}
+
+	public static class ImproveContentResponse {
+		private final String originalText;
+		private final String improvedText;
+		private final List<String> suggestions;
+		private final double confidence;
+
+		public ImproveContentResponse(String originalText, String improvedText, List<String> suggestions, double confidence) {
+			this.originalText = originalText;
+			this.improvedText = improvedText;
+			this.suggestions = suggestions;
+			this.confidence = confidence;
+		}
+
+		public String getOriginalText() {
+			return originalText;
+		}
+
+		public String getImprovedText() {
+			return improvedText;
+		}
+
+		public List<String> getSuggestions() {
+			return suggestions;
+		}
+
+		public double getConfidence() {
+			return confidence;
 		}
 	}
 

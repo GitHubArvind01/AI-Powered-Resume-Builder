@@ -109,11 +109,13 @@ public class GoogleAuthService {
 					user.setFullName(email);
 					user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
 					user.setRole("USER");
+					user.setSubscriptionPlan("FREE");
+					user.setActive(true);
 					userRepository.save(user);
 				}
 				User userDB = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
-				String token = jwtService.generateToken(email, userDB.getId());
-			return new AuthResponse(token, userDB.getRole(), userDB.getSubscriptionPlan(),"Google login success");
+				String token = jwtService.generateToken(userDB);
+			return new AuthResponse(token, "Google login success");
 		}
 		throw new UnauthorizedException("Unauthorize authentication exception.");
 	}

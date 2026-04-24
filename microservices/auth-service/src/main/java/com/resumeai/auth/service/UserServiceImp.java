@@ -10,13 +10,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.resumeai.auth.dtos.AuthResponse;
-import com.resumeai.auth.dtos.CurrentUserResponseDTO;
 import com.resumeai.auth.dtos.EmailEvent;
 import com.resumeai.auth.dtos.LoginRequest;
 import com.resumeai.auth.dtos.RegisterRequest;
 import com.resumeai.auth.dtos.UpdateProfileRequest;
 import com.resumeai.auth.dtos.UserResponseDTO;
+import com.resumeai.auth.dtos.CurrentUserResponseDTO;
 import com.resumeai.auth.entity.User;
+import com.resumeai.auth.exception.UnauthorizedException;
 import com.resumeai.auth.messaging.EmailEventProducer;
 import com.resumeai.auth.repository.UserRepository;
 
@@ -113,8 +114,8 @@ public class UserServiceImp implements UserService {
 		userdb.setActive(true);
 		userdb.setOtpCode(null);
 		userRepository.save(userdb);
-		String token = jwtService.generateToken(email, userdb.getId());
-		return new AuthResponse(token, userdb.getRole(), userdb.getSubscriptionPlan(),"User Register success");
+		String token = jwtService.generateToken(userdb);
+		return new AuthResponse(token, "User Register success");
 	}
 
 	// login
@@ -140,8 +141,8 @@ public class UserServiceImp implements UserService {
 		/*
 		 * only Active user can login
 		 */
-		String token = jwtService.generateToken(loginRequest.getEmail(), userdb.getId());
-		return new AuthResponse(token, userdb.getRole(), userdb.getSubscriptionPlan(),"Login Success");
+		String token = jwtService.generateToken(userdb);
+		return new AuthResponse(token, "Login Success");
 	}
 
 	/*
@@ -316,6 +317,10 @@ public class UserServiceImp implements UserService {
 	public CurrentUserResponseDTO getCurrentUser(String email) {
 		User userdb = userRepository.findByEmail(email)
 				.orElseThrow(() -> new RuntimeException("User not found!"));
+
+		if (!userdb.isActive()) {
+			throw new UnauthorizedException("Your account has been deactivated. Please contact support.");
+		}
 
 		return new CurrentUserResponseDTO(
 				userdb.getId(),

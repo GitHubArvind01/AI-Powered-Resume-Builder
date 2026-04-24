@@ -8,6 +8,9 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.resumeai.auth.entity.User;
+
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -27,12 +30,14 @@ public class JwtService {
 		this.signingKey = Keys.hmacShaKeyFor(SECRET.getBytes());
 	}
 	
-	public String generateToken(String email, Long userId) {
+	public String generateToken(User user) {
 		Map<String, Object> claims = new HashMap<>();
-		claims.put("userId", userId);
+		claims.put("userId", user.getId());
+		claims.put("role", user.getRole());
+		claims.put("subscriptionPlan", user.getSubscriptionPlan());
 		return Jwts.builder()
 				.setClaims(claims)
-				.setSubject(email)
+				.setSubject(user.getEmail())
 				.setIssuedAt(new Date())
 				.setExpiration(new Date(System.currentTimeMillis()+expirationTime))
 				.signWith(signingKey, SignatureAlgorithm.HS256)
@@ -54,5 +59,13 @@ public class JwtService {
 	public boolean isTokenExpired(String token) {
 		return Jwts.parserBuilder().setSigningKey(signingKey).build()
 				.parseClaimsJws(token).getBody().getExpiration().before(new Date());
+	}
+
+	public Claims extractAllClaims(String token) {
+		return Jwts.parserBuilder()
+				.setSigningKey(signingKey)
+				.build()
+				.parseClaimsJws(token)
+				.getBody();
 	}
 }

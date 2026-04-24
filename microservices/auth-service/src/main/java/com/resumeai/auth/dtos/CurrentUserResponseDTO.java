@@ -1,0 +1,18 @@
+package com.resumeai.auth.dtos;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class CurrentUserResponseDTO {
+    private Long id;
+    private String fullName;
+    private String email;
+    private String phone;
+    private String role;
+    private boolean active;
+    private String subscriptionPlan;
+}

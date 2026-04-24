@@ -25,6 +25,12 @@ spring:
             - Path=/api/v1/users/**
           filters:
             - AuthenticationFilter
+        - id: admin-auth
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/api/v1/admin/**
+          filters:
+            - AuthenticationFilter
         # ================= RESUME SERVICE =================
         - id: resume-service
           uri: lb://RESUME-SERVICE

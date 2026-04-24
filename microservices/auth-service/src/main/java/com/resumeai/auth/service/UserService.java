@@ -1,6 +1,7 @@
 package com.resumeai.auth.service;
 
 import com.resumeai.auth.dtos.AuthResponse;
+import com.resumeai.auth.dtos.CurrentUserResponseDTO;
 import com.resumeai.auth.dtos.LoginRequest;
 import com.resumeai.auth.dtos.RegisterRequest;
 import com.resumeai.auth.dtos.UpdateProfileRequest;
@@ -41,4 +42,6 @@ public interface UserService {
     public UserResponseDTO getUserByEmail(String email);
 
     public UserResponseDTO getUserById(Long id);
+
+    CurrentUserResponseDTO getCurrentUser(String email);
 }

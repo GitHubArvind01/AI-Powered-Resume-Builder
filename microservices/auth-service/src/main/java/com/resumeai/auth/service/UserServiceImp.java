@@ -12,6 +12,7 @@ import com.resumeai.auth.dtos.RegisterRequest;
 import com.resumeai.auth.dtos.UpdateProfileRequest;
 import com.resumeai.auth.dtos.UserResponseDTO;
 import com.resumeai.auth.dtos.AuthResponse;
+import com.resumeai.auth.dtos.CurrentUserResponseDTO;
 import com.resumeai.auth.entity.User;
 import com.resumeai.auth.repository.UserRepository;
 
@@ -282,5 +283,20 @@ public class UserServiceImp implements UserService{
 	public UserResponseDTO getUserById(Long id) {
 		User userdb = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found!"));
 		return new UserResponseDTO(userdb.getFullName(), userdb.getEmail(), userdb.getPhone(), userdb.getRole(), userdb.isActive(), userdb.getSubscriptionPlan());
+	}
+
+	@Override
+	public CurrentUserResponseDTO getCurrentUser(String email) {
+		User userdb = userRepository.findByEmail(email)
+				.orElseThrow(() -> new RuntimeException("User not found!"));
+
+		return new CurrentUserResponseDTO(
+				userdb.getId(),
+				userdb.getFullName(),
+				userdb.getEmail(),
+				userdb.getPhone(),
+				userdb.getRole(),
+				userdb.isActive(),
+				userdb.getSubscriptionPlan());
 	}
 }

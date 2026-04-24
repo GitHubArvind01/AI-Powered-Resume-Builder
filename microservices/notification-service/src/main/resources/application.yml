@@ -1,0 +1,83 @@
+server:
+  port: ${PORT:8086}
+
+spring:
+  application:
+    name: NOTIFICATION-SERVICE
+
+  # ── RabbitMQ ────────────────────────────────────────────────────────────────
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: /
+    listener:
+      simple:
+        # Retry failed messages up to 3 times before discarding
+        retry:
+          enabled: true
+          initial-interval: 2000ms
+          max-attempts: 3
+          multiplier: 2.0
+
+  # ── Gmail SMTP ───────────────────────────────────────────────────────────────
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}         # Use Gmail App Password (NOT your account password)
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+# ── App-level RabbitMQ constants (consumed by @RabbitListener) ───────────────
+app:
+  rabbitmq:
+    queue: email.queue
+    exchange: email.exchange
+    routing-key: email.routing
+
+# ── Eureka ───────────────────────────────────────────────────────────────────
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+
+# ── Actuator ─────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  boot:
+    admin:
+      client:
+        url: ${ADMIN_SERVER_URL:http://localhost:9090}
+        instance:
+          prefer-ip: true
+
+# ── Swagger ───────────────────────────────────────────────────────────────────
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: alpha
+    tagsSorter: alpha
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  level:
+    com.resumeai.notification_service: DEBUG
+    org.springframework.amqp: INFO

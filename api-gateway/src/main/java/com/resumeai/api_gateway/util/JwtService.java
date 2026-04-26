@@ -70,4 +70,19 @@ public class JwtService {
 			return null;  // Return null if userId not found
 		}
 	}
+
+	public String extractRole(String token) {
+		try {
+			Claims claims = Jwts.parserBuilder()
+					.setSigningKey(signingKey)
+					.build()
+					.parseClaimsJws(token)
+					.getBody();
+
+			Object roleObj = claims.get("role");
+			return roleObj == null ? null : roleObj.toString();
+		} catch (Exception e) {
+			return null;
+		}
+	}
 }

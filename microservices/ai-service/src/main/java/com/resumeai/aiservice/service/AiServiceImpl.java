@@ -257,7 +257,9 @@ public class AiServiceImpl implements AiService {
 
 	// Prompt builders
 	private String buildSummaryPrompt(String resumeContent) {
-		return "Based on the following resume content, generate a professional summary (2-3 sentences):\n\n"
+		return "Rewrite the following resume summary into a more professional, concise, and impactful paragraph. "
+				+ "Do not explain anything. Only return the improved summary. "
+				+ "The result must be a single paragraph with no headings, bullet points, or suggestions.\n\n"
 				+ resumeContent;
 	}
 
@@ -272,7 +274,9 @@ public class AiServiceImpl implements AiService {
 	}
 
 	private String buildImprovePrompt(String resumeContent) {
-		return "Review and provide suggestions to improve the following resume:\n\n" + resumeContent;
+		return "Rewrite the following resume content to be more professional, concise, and impactful. "
+				+ "Do not explain your changes. Return only the improved final text with no headings or bullet points unless the input is already bullet content.\n\n"
+				+ resumeContent;
 	}
 
 	private String buildAtsPrompt(String resumeContent, String jobDescription) {

@@ -139,6 +139,16 @@ public class PaypalController {
         return new RedirectView(clientUrl + frontendFailedPath);
     }
 
+    @GetMapping("/verify/{paymentId}")
+    @Operation(summary = "Verify completed payment", description = "Confirms that a redirected payment was completed for the authenticated user")
+    public ResponseEntity<PaymentResponseDTO> verifyPayment(
+            @PathVariable String paymentId,
+            @RequestHeader(value = "X-User-Id", required = true) Long userId) {
+
+        log.info("Verifying payment {} for user {}", paymentId, userId);
+        return ResponseEntity.ok(service.verifyCompletedPayment(paymentId, userId));
+    }
+
     /**
      * Get payment history for a user
      */

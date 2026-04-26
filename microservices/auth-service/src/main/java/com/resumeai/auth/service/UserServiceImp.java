@@ -145,6 +145,19 @@ public class UserServiceImp implements UserService {
 		return new AuthResponse(token, "Login Success");
 	}
 
+	@Override
+	public AuthResponse refreshToken(String email) {
+		User userdb = userRepository.findByEmail(email)
+				.orElseThrow(() -> new RuntimeException("User not found!"));
+
+		if (!userdb.isActive()) {
+			throw new UnauthorizedException("Your account has been deactivated. Please contact support.");
+		}
+
+		String token = jwtService.generateToken(userdb);
+		return new AuthResponse(token, "Token refreshed successfully");
+	}
+
 	/*
 	 * First We validate email- that exit in our database or not If email exist in
 	 * our database then I will send 6-digit verification code to email otherwise

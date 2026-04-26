@@ -21,6 +21,8 @@ public interface UserService {
      */
     AuthResponse loginUser(LoginRequest loginRequest);
 
+    AuthResponse refreshToken(String email);
+
     /*
      * FORGOT PASSWORD FLOW
      */

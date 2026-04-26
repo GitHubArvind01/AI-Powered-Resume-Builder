@@ -120,7 +120,7 @@ public class AdminServiceImpl implements AdminService {
 
         publishUserActionEmail(
                 user.getEmail(),
-                "Your Resume Builder account has been permanently deleted by an administrator. If you believe this was a mistake, please contact support immediately.",
+                "Your account has been permanently deleted from our platform.",
                 "Account Deleted",
                 "USER_DELETED"
         );
@@ -144,7 +144,7 @@ public class AdminServiceImpl implements AdminService {
 
         publishUserActionEmail(
                 savedUser.getEmail(),
-                "Your Resume Builder account has been deactivated by an administrator. You will not be able to log in until the account is reactivated.",
+                "Your account has been deactivated. Contact support if needed.",
                 "Account Deactivated",
                 "USER_DEACTIVATED"
         );

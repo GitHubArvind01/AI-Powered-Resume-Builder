@@ -209,6 +209,20 @@ public class AiServiceImpl implements AiService {
 		Set<String> jobKeywords = extractKeywords(jobDescription);
 		Set<String> resumeKeywords = extractKeywords(resumeContent);
 
+		if (jobKeywords.isEmpty()) {
+			return AtsReportDTO.builder()
+					.userId(userId)
+					.resumeId(resumeId)
+					.atsScore(0)
+					.matchedKeywords(new ArrayList<>())
+					.missingKeywords(new ArrayList<>())
+					.overallFeedback("Add a job description to receive a meaningful ATS analysis.")
+					.improvements(List.of("Provide a target job description before running ATS analysis."))
+					.totalKeywordsChecked(0)
+					.keywordsMatched(0)
+					.build();
+		}
+
 		// Calculate matches
 		Set<String> matchedKeywords = resumeKeywords.stream().filter(jobKeywords::contains)
 				.collect(Collectors.toSet());

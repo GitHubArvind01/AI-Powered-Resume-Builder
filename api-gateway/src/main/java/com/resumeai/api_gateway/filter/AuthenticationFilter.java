@@ -12,8 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
-import com.resumeai.api_gateway.util.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.resumeai.api_gateway.util.JwtService;
 
 import reactor.core.publisher.Mono;
 
@@ -35,7 +35,6 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             String path = exchange.getRequest().getURI().getPath();
-            // THIS BLOCK: Skip JWT validation for PayPal callbacks
             if (path.contains("/api/v1/payments/pay/success") ||
                     path.contains("/api/v1/payments/pay/cancel")) {
                 return chain.filter(exchange);
@@ -56,20 +55,19 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                     return onError(exchange, "Token Expired", HttpStatus.UNAUTHORIZED, path);
                 }
 
-                // 1. Extract Email and ID from Token
                 String email = jwtService.extractEmail(token);
                 String userId = jwtService.extractUserId(token);
+                String role = jwtService.extractRole(token);
 
-                // ✅ Validate userId exists in token
                 if (userId == null || userId.isEmpty()) {
                     return onError(exchange, "UserId claim missing in token", HttpStatus.UNAUTHORIZED, path);
                 }
 
-                // 2. Inject BOTH into headers for downstream services
                 return chain.filter(exchange.mutate()
                         .request(exchange.getRequest().mutate()
                                 .header("X-User-Email", email)
-                                .header("X-User-Id", userId) // ✅ userId extracted from JWT
+                                .header("X-User-Id", userId)
+                                .header("X-User-Role", role == null ? "" : role)
                                 .build())
                         .build());
 
@@ -79,11 +77,10 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
         };
     }
 
-    // 🔥 Centralized Error Response Method
     private Mono<Void> onError(org.springframework.web.server.ServerWebExchange exchange,
-                              String message,
-                              HttpStatus status,
-                              String path) {
+                               String message,
+                               HttpStatus status,
+                               String path) {
 
         exchange.getResponse().setStatusCode(status);
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);

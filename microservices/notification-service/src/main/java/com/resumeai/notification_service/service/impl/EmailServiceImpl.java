@@ -67,45 +67,78 @@ public class EmailServiceImpl implements EmailService {
 
     private String buildOtpHtmlTemplate(String messageText, String otp) {
         return """
-                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                            background-color: #f4f7f6; padding: 40px; border-radius: 10px;">
-                  <div style="max-width: 520px; margin: auto; background-color: #ffffff;
-                              border-radius: 10px; overflow: hidden;
-                              box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
-                    <div style="background: linear-gradient(135deg, #1a1a2e 0%%, #16213e 50%%, #0f3460 100%%);
-                                padding: 28px; text-align: center;">
-                      <h1 style="color: #e94560; margin: 0; font-size: 22px; letter-spacing: 3px;
-                                 text-transform: uppercase;">AI Resume Builder</h1>
-                      <p style="color: #a0aec0; margin: 6px 0 0; font-size: 13px; letter-spacing: 1px;">
-                        Secure Verification System
+        <div style="margin:0;padding:0;background-color:#f4f7f6;">
+          <table width="100%%" cellpadding="0" cellspacing="0" border="0"
+                 style="font-family:Segoe UI,Arial,sans-serif;">
+            <tr>
+              <td align="center" style="padding:20px 10px;">
+                
+                <table width="100%%" cellpadding="0" cellspacing="0" border="0"
+                       style="max-width:480px;background:#ffffff;border-radius:10px;
+                              overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+
+                  <!-- HEADER -->
+                  <tr>
+                    <td style="background:#0f3460;padding:20px;text-align:center;">
+                      <h1 style="color:#e94560;margin:0;font-size:18px;">
+                        AI Resume Builder
+                      </h1>
+                      <p style="color:#cbd5e0;font-size:12px;margin:5px 0 0;">
+                        Secure Verification
                       </p>
-                    </div>
-                    <div style="padding: 40px; text-align: center;">
-                      <p style="color: #4a5568; font-size: 16px; margin: 0 0 8px;">Hello,</p>
-                      <p style="color: #4a5568; font-size: 15px; margin: 0 0 30px;">%s</p>
-                      <div style="margin: 0 auto 30px; display: inline-block;">
-                        <span style="font-size: 38px; font-weight: 800; color: #0f3460;
-                                     letter-spacing: 10px; padding: 14px 28px;
-                                     border: 2px dashed #e94560; border-radius: 8px;
-                                     background-color: #f7f9fc; display: inline-block;">
+                    </td>
+                  </tr>
+
+                  <!-- BODY -->
+                  <tr>
+                    <td style="padding:20px;text-align:center;">
+                      <p style="font-size:15px;color:#4a5568;margin:0 0 10px;">
+                        Hello,
+                      </p>
+
+                      <p style="font-size:14px;color:#4a5568;margin:0 0 20px;">
+                        %s
+                      </p>
+
+                      <!-- OTP BOX -->
+                      <div style="margin:20px 0;">
+                        <span style="display:inline-block;
+                                     font-size:28px;
+                                     font-weight:bold;
+                                     color:#0f3460;
+                                     letter-spacing:4px;
+                                     padding:12px 16px;
+                                     border:2px dashed #e94560;
+                                     border-radius:6px;
+                                     background:#f7f9fc;
+                                     word-break:break-all;">
                           %s
                         </span>
                       </div>
-                      <p style="color: #a0aec0; font-size: 13px; margin: 0;">
-                        This code expires in <strong>5 minutes</strong>. If you did not request this, please ignore this email.
-                      </p>
-                    </div>
-                    <div style="background-color: #f8f9fa; padding: 20px;
-                                text-align: center; border-top: 1px solid #edf2f7;">
-                      <p style="color: #cbd5e0; font-size: 12px; margin: 0;">
-                        Copyright 2026 AI-Powered Resume Builder. All rights reserved.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                """.formatted(messageText, otp != null ? otp : "");
-    }
 
+                      <p style="font-size:12px;color:#718096;margin-top:10px;">
+                        This code expires in <strong>5 minutes</strong>.
+                      </p>
+                    </td>
+                  </tr>
+
+                  <!-- FOOTER -->
+                  <tr>
+                    <td style="background:#f8f9fa;padding:15px;text-align:center;">
+                      <p style="font-size:11px;color:#a0aec0;margin:0;">
+                        © 2026 AI Resume Builder
+                      </p>
+                    </td>
+                  </tr>
+
+                </table>
+
+              </td>
+            </tr>
+          </table>
+        </div>
+        """.formatted(messageText, otp != null ? otp : "");
+    }
     private String buildMessageHtmlTemplate(String messageText) {
         return """
                 <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;

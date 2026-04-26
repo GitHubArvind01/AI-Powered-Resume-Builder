@@ -21,7 +21,7 @@ public class PdfExportController {
 
     private final ResumePdfExportService resumePdfExportService;
 
-    @PostMapping("/pdf")
+    @PostMapping(value = "/pdf", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_PDF_VALUE)
     @Operation(summary = "Export resume as PDF", description = "Generate a PDF byte stream for the authenticated user's resume.")
     public ResponseEntity<byte[]> exportResumePdf(
             @Valid @RequestBody PdfExportRequestDTO request,
@@ -30,6 +30,7 @@ public class PdfExportController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=resume-" + request.getResumeId() + ".pdf")
+                .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
     }

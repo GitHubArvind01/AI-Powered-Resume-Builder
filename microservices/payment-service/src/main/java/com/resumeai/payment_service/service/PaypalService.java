@@ -203,5 +203,14 @@ public class PaypalService {
 
         return PaymentResponseDTO.fromEntity(payment);
     }
+
+    @Transactional(readOnly = true)
+    public PaymentResponseDTO verifyCompletedPayment(String paymentId, Long userId) {
+        PaymentResponseDTO payment = getPaymentById(paymentId, userId);
+        if (!"COMPLETED".equalsIgnoreCase(payment.getStatus())) {
+            throw new ResourceNotFoundException("Payment is not completed yet for ID: " + paymentId);
+        }
+        return payment;
+    }
 }
 

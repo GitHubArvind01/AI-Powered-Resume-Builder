@@ -77,13 +77,6 @@
 		<optional>true</optional>
 	</dependency>
 
-	<!-- H2 Database for development/testing -->
-	<dependency>
-		<groupId>com.h2database</groupId>
-		<artifactId>h2</artifactId>
-		<scope>runtime</scope>
-	</dependency>
-
 	<!-- Lombok for reducing boilerplate code -->
 	<dependency>
 		<groupId>org.projectlombok</groupId>
@@ -173,6 +166,18 @@
 		<groupId>com.fasterxml.jackson.core</groupId>
 		<artifactId>jackson-databind</artifactId>
 	</dependency>
+
+	<dependency>
+		<groupId>org.apache.tika</groupId>
+		<artifactId>tika-core</artifactId>
+		<version>2.9.2</version>
+	</dependency>
+
+	<dependency>
+		<groupId>org.apache.tika</groupId>
+		<artifactId>tika-parsers-standard-package</artifactId>
+		<version>2.9.2</version>
+	</dependency>
 </dependencies>
 
 <build>
@@ -185,4 +190,3 @@
 </build>
 
 </project>
-

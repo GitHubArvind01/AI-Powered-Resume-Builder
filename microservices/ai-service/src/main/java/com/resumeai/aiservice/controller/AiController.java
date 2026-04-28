@@ -3,6 +3,7 @@ package com.resumeai.aiservice.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.tika.Tika;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,7 +11,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.resumeai.aiservice.dto.AiRequestDTO;
 import com.resumeai.aiservice.dto.AtsReportDTO;
@@ -37,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AiController {
 
 	private final AiService aiService;
+	private final Tika tika = new Tika();
 
 	/**
 	 * Welcome endpoint to check if service is running
@@ -145,6 +150,28 @@ public class AiController {
 		log.info("Checking ATS compatibility for user: {}, resumeId: {}", request.getUserId(), request.getResumeId());
 		AtsReportDTO response = aiService.checkAtsCompatibility(request.getUserId(), request.getResumeId(),
 				request.getResumeContent(), request.getJobDescription());
+		return ResponseEntity.status(HttpStatus.OK).body(response);
+	}
+
+	@PostMapping("/check-ats/upload")
+	@Operation(summary = "Check ATS Compatibility from uploaded resume",
+			description = "Extracts text from an uploaded resume file and runs the same ATS analysis flow.")
+	public ResponseEntity<AtsReportDTO> checkAtsCompatibilityFromUpload(
+			@RequestHeader("X-User-Id") Long userId,
+			@RequestParam("file") MultipartFile file,
+			@RequestParam(value = "jobDescription", required = false, defaultValue = "") String jobDescription)
+			throws Exception {
+		if (file.isEmpty()) {
+			throw new IllegalArgumentException("Please choose a resume file before starting ATS analysis.");
+		}
+
+		String resumeContent = tika.parseToString(file.getInputStream());
+		if (resumeContent == null || resumeContent.trim().isEmpty()) {
+			throw new IllegalArgumentException("We couldn't extract readable text from this file. Please try another file or paste the resume content.");
+		}
+
+		log.info("Checking ATS compatibility for uploaded file: {}, user: {}", file.getOriginalFilename(), userId);
+		AtsReportDTO response = aiService.checkAtsCompatibility(userId, null, resumeContent, jobDescription);
 		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
 

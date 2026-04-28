@@ -50,6 +50,18 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
 	}
 
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException e,
+			HttpServletRequest request) {
+		ErrorResponse error = new ErrorResponse();
+		error.setTimestamp(LocalDateTime.now());
+		error.setStatus(HttpStatus.BAD_REQUEST.value());
+		error.setError(HttpStatus.BAD_REQUEST.getReasonPhrase());
+		error.setMessage(e.getMessage());
+		error.setPath(request.getRequestURL().toString());
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+	}
+
 	@ExceptionHandler(RuntimeException.class)
 	public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException e,
 			HttpServletRequest request) {

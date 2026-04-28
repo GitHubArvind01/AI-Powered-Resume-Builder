@@ -120,7 +120,7 @@ public class PaypalController {
         Payment payment = service.executePayment(paymentId, payerId);
         if (payment.getState().equals("approved")) {
             log.info("Payment approved successfully for paymentId: {}", paymentId);
-            return new RedirectView(clientUrl + frontendSuccessPath);
+            return new RedirectView(String.format("%s%s?paymentId=%s", clientUrl, frontendSuccessPath, paymentId));
         }
 
         log.warn("Payment not approved for paymentId: {}", paymentId);

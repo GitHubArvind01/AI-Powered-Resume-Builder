@@ -6,22 +6,20 @@ server:
 spring:
   application:
     name: EXPORT-SERVICE
+
   datasource:
-    url: jdbc:h2:mem:exportdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ''
-  h2:
-    console:
-      enabled: true
+    url: jdbc:mysql://localhost:3306/export_db
+    username: resumeai
+    password: resumeai
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
-    show-sql: true
     properties:
       hibernate:
-        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
   jackson:
     serialization:
       write-dates-as-timestamps: false

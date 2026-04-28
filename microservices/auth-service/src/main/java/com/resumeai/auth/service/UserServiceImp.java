@@ -17,6 +17,7 @@ import com.resumeai.auth.dtos.UpdateProfileRequest;
 import com.resumeai.auth.dtos.UserResponseDTO;
 import com.resumeai.auth.dtos.CurrentUserResponseDTO;
 import com.resumeai.auth.entity.User;
+import com.resumeai.auth.exception.BadRequestException;
 import com.resumeai.auth.exception.UnauthorizedException;
 import com.resumeai.auth.messaging.EmailEventProducer;
 import com.resumeai.auth.repository.UserRepository;
@@ -40,8 +41,9 @@ public class UserServiceImp implements UserService {
 	@Transactional
 	@Override
     public String registerRequest(RegisterRequest registerRequest) {
+        String normalizedEmail = normalizeEmail(registerRequest.getEmail());
         // 1. Check if user exists
-        Optional<User> userOptional = userRepository.findByEmail(registerRequest.getEmail());
+        Optional<User> userOptional = userRepository.findByEmail(normalizedEmail);
 
         User user;
         if (userOptional.isPresent()) {
@@ -58,7 +60,7 @@ public class UserServiceImp implements UserService {
             // Create a brand new user
             user = new User();
             user.setFullName(registerRequest.getFullName());
-            user.setEmail(registerRequest.getEmail());
+            user.setEmail(normalizedEmail);
             user.setRole("USER");
             user.setSubscriptionPlan("FREE");
             user.setActive(false);
@@ -93,26 +95,29 @@ public class UserServiceImp implements UserService {
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
     }
 
-    @Override
+	@Override
 	public AuthResponse registerUser(String email, String otp) {
-		User userdb = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
+		User userdb = userRepository.findByEmail(normalizeEmail(email))
+				.orElseThrow(() -> new BadRequestException("We couldn't find a pending registration for that email. Please request a new OTP and try again."));
+		String normalizedOtp = normalizeOtp(otp);
 
 		/*
 		 * Here First we validate the OTP with our DB
 		 */
-		if (userdb.getOtpCode() == null || !userdb.getOtpCode().equals(otp)) {
-			throw new RuntimeException("OTP Invalid! please try again.");
+		if (userdb.getOtpCode() == null || !userdb.getOtpCode().equals(normalizedOtp)) {
+			throw new BadRequestException("Invalid OTP. Please check the latest code from your email or request a new OTP.");
 		}
 
 		/*
 		 * here - Validatation of OTP is expire or not
 		 */
-		if (userdb.getOtpCode() == null || userdb.getOtpExpiry().isBefore(LocalDateTime.now())) {
-			throw new RuntimeException("OTP Expired! please try again.");
+		if (userdb.getOtpExpiry() == null || userdb.getOtpExpiry().isBefore(LocalDateTime.now())) {
+			throw new BadRequestException("OTP expired. Please request a new OTP and try again.");
 		}
 
 		userdb.setActive(true);
 		userdb.setOtpCode(null);
+		userdb.setOtpExpiry(null);
 		userRepository.save(userdb);
 		String token = jwtService.generateToken(userdb);
 		return new AuthResponse(token, "User Register success");
@@ -232,6 +237,14 @@ public class UserServiceImp implements UserService {
 	private String generateOtp() {
 	    int otp = 100000 + random.nextInt(900000);
 	    return String.valueOf(otp);
+	}
+
+	private String normalizeEmail(String email) {
+		return email == null ? null : email.trim().toLowerCase();
+	}
+
+	private String normalizeOtp(String otp) {
+		return otp == null ? "" : otp.trim();
 	}
 
 	@Override

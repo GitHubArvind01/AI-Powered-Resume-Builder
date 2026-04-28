@@ -3,13 +3,12 @@ spring:
     name: resume-section-service
 
   datasource:
-    url: jdbc:h2:mem:resumesectiondb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: jdbc:mysql://localhost:3306/resumesection_db
+    username: resumeai
+    password: resumeai
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: update
     show-sql: false
@@ -21,6 +20,7 @@ spring:
           batch_size: 20
         order_inserts: true
         order_updates: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
 
   jackson:
     serialization:

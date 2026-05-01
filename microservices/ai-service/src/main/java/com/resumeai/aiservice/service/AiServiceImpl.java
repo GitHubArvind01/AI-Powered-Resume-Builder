@@ -6,7 +6,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.stereotype.Service;
 
@@ -205,45 +210,125 @@ public class AiServiceImpl implements AiService {
 
 	private AtsReportDTO parseAtsResponse(Long userId, Long resumeId, String aiResponse, String jobDescription,
 			String resumeContent) {
-		// Extract keywords from job description
+
+		// --- Stage 1: Try to parse the structured JSON the prompt requests ---
+		try {
+			// Gemini may wrap JSON in a markdown code block; strip it
+			String json = aiResponse.trim();
+			Pattern codeBlock = Pattern.compile("```(?:json)?\\s*([\\s\\S]*?)```", Pattern.CASE_INSENSITIVE);
+			Matcher matcher = codeBlock.matcher(json);
+			if (matcher.find()) {
+				json = matcher.group(1).trim();
+			}
+
+			// Also handle JSON embedded anywhere after non-JSON preamble
+			int braceStart = json.indexOf('{');
+			int braceEnd = json.lastIndexOf('}');
+			if (braceStart >= 0 && braceEnd > braceStart) {
+				json = json.substring(braceStart, braceEnd + 1);
+			}
+
+			ObjectMapper mapper = new ObjectMapper();
+			JsonNode root = mapper.readTree(json);
+
+			int atsScore = root.path("atsScore").asInt(0);
+			atsScore = Math.min(100, Math.max(0, atsScore));
+
+			List<String> matched = new ArrayList<>();
+			root.path("matchedKeywords").forEach(node -> matched.add(node.asText()));
+
+			List<String> missing = new ArrayList<>();
+			root.path("missingKeywords").forEach(node -> missing.add(node.asText()));
+
+			List<String> improvements = new ArrayList<>();
+			root.path("improvements").forEach(node -> improvements.add(node.asText()));
+
+			String feedback = root.path("overallFeedback").asText(
+					"Analysis complete. Review the matched and missing keywords above.");
+
+			log.info("[ATS] Successfully parsed structured JSON response. score={}", atsScore);
+
+			return AtsReportDTO.builder()
+					.userId(userId)
+					.resumeId(resumeId)
+					.atsScore(atsScore)
+					.matchedKeywords(matched)
+					.missingKeywords(missing)
+					.improvements(improvements)
+					.overallFeedback(feedback)
+					.totalKeywordsChecked(matched.size() + missing.size())
+					.keywordsMatched(matched.size())
+					.build();
+
+		} catch (Exception parseException) {
+			log.warn("[ATS] Could not parse JSON from AI response ({}). Falling back to keyword-match algorithm.",
+					parseException.getMessage());
+		}
+
+		// --- Stage 2: Fallback — simple keyword-bag algorithm ---
 		Set<String> jobKeywords = extractKeywords(jobDescription);
 		Set<String> resumeKeywords = extractKeywords(resumeContent);
 
 		if (jobKeywords.isEmpty()) {
+			// No JD provided — score based on resume structure quality heuristic
+			int heuristicScore = computeStructureScore(resumeContent);
 			return AtsReportDTO.builder()
 					.userId(userId)
 					.resumeId(resumeId)
-					.atsScore(0)
+					.atsScore(heuristicScore)
 					.matchedKeywords(new ArrayList<>())
 					.missingKeywords(new ArrayList<>())
-					.overallFeedback("Add a job description to receive a meaningful ATS analysis.")
-					.improvements(List.of("Provide a target job description before running ATS analysis."))
+					.overallFeedback(aiResponse)
+					.improvements(List.of(
+							"Add a target job description for a more precise keyword-match score.",
+							"Ensure your resume uses action verbs and quantifiable achievements.",
+							"Include measurable impact in each experience bullet (e.g., \"Reduced load time by 40%\")."))
 					.totalKeywordsChecked(0)
 					.keywordsMatched(0)
 					.build();
 		}
 
-		// Calculate matches
 		Set<String> matchedKeywords = resumeKeywords.stream().filter(jobKeywords::contains)
 				.collect(Collectors.toSet());
 		Set<String> missingKeywords = jobKeywords.stream().filter(k -> !resumeKeywords.contains(k))
 				.collect(Collectors.toSet());
 
-		// Calculate ATS score
-		Integer atsScore = (int) (100.0 * matchedKeywords.size() / jobKeywords.size());
+		int atsScore = (int) (100.0 * matchedKeywords.size() / jobKeywords.size());
 		atsScore = Math.min(100, Math.max(0, atsScore));
 
 		List<String> improvements = new ArrayList<>();
-		if (missingKeywords.size() > 0) {
-			improvements.add("Add missing keywords: " + String.join(", ", missingKeywords.stream().limit(5)
-					.collect(Collectors.toList())));
+		if (!missingKeywords.isEmpty()) {
+			improvements.add("Add missing keywords: " + String.join(", ",
+					missingKeywords.stream().limit(5).collect(Collectors.toList())));
 		}
 
-		return AtsReportDTO.builder().userId(userId).resumeId(resumeId).atsScore(atsScore)
+		return AtsReportDTO.builder()
+				.userId(userId)
+				.resumeId(resumeId)
+				.atsScore(atsScore)
 				.matchedKeywords(new ArrayList<>(matchedKeywords))
 				.missingKeywords(new ArrayList<>(missingKeywords))
-				.overallFeedback(aiResponse).improvements(improvements)
-				.totalKeywordsChecked(jobKeywords.size()).keywordsMatched(matchedKeywords.size()).build();
+				.overallFeedback(aiResponse)
+				.improvements(improvements)
+				.totalKeywordsChecked(jobKeywords.size())
+				.keywordsMatched(matchedKeywords.size())
+				.build();
+	}
+
+	/**
+	 * Heuristic resume-quality score (0–100) used when no job description is provided.
+	 * Rewards presence of key resume sections and penalises very short content.
+	 */
+	private int computeStructureScore(String resumeContent) {
+		if (resumeContent == null || resumeContent.trim().isEmpty()) return 0;
+		int score = 40; // base
+		String lower = resumeContent.toLowerCase();
+		if (lower.contains("experience") || lower.contains("worked") || lower.contains("responsible")) score += 15;
+		if (lower.contains("education") || lower.contains("university") || lower.contains("degree")) score += 10;
+		if (lower.contains("skill") || lower.contains("proficient") || lower.contains("expertise")) score += 10;
+		if (lower.contains("achieved") || lower.contains("improved") || lower.contains("%") || lower.contains("reduced")) score += 15;
+		if (resumeContent.length() < 300) score -= 20;
+		return Math.min(100, Math.max(0, score));
 	}
 
 	private Set<String> extractKeywords(String content) {
@@ -294,9 +379,26 @@ public class AiServiceImpl implements AiService {
 	}
 
 	private String buildAtsPrompt(String resumeContent, String jobDescription) {
-		return "Analyze the following resume for ATS compatibility with the job description. "
-				+ "Identify keywords and suggestions:\n\nResume:\n" + resumeContent + "\n\nJob Description:\n"
-				+ jobDescription;
+		boolean hasJobDescription = jobDescription != null && !jobDescription.trim().isEmpty();
+
+		String analysisInstruction = hasJobDescription
+				? "Analyze the resume against the provided job description. Identify matched keywords, missing keywords, and score accordingly."
+				: "No job description was provided. Analyze the resume based on general industry best practices: "
+						+ "use of action verbs, quantifiable achievements, proper structure (summary, experience, education, skills), "
+						+ "keyword density, and ATS-friendliness. Score accordingly (0-100).";
+
+		return "You are an expert ATS (Applicant Tracking System) analyst. " + analysisInstruction + "\n\n"
+				+ "Resume Content:\n" + resumeContent + "\n\n"
+				+ (hasJobDescription ? "Job Description:\n" + jobDescription + "\n\n" : "")
+				+ "You MUST respond with ONLY a valid JSON object. Do not include any explanation or markdown. "
+				+ "The JSON must use exactly this structure:\n"
+				+ "{\n"
+				+ "  \"atsScore\": <integer 0-100>,\n"
+				+ "  \"matchedKeywords\": [<list of keyword strings found in both resume and job description>],\n"
+				+ "  \"missingKeywords\": [<list of important keywords from the job description missing in resume>],\n"
+				+ "  \"improvements\": [<list of 3-5 specific, actionable improvement suggestions as strings>],\n"
+				+ "  \"overallFeedback\": \"<2-3 sentence overall assessment string>\"\n"
+				+ "}";
 	}
 
 	private String buildSkillsPrompt(String resumeContent) {

@@ -41,6 +41,7 @@ public class EmailEventConsumer {
         }
 
         return !("USER_DELETED".equalsIgnoreCase(event.getPurpose())
-                || "USER_DEACTIVATED".equalsIgnoreCase(event.getPurpose()));
+                || "USER_DEACTIVATED".equalsIgnoreCase(event.getPurpose())
+                || "USER_ACTIVATED".equalsIgnoreCase(event.getPurpose()));
     }
 }

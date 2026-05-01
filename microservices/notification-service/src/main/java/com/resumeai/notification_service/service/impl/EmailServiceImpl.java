@@ -58,6 +58,9 @@ public class EmailServiceImpl implements EmailService {
             case "REGISTER" -> "Use this OTP to complete your registration. Valid for 5 minutes.";
             case "FORGOT_PASSWORD" -> "Use the following code to reset your password. Valid for 5 minutes.";
             case "UPDATE_EMAIL" -> "Use this code to verify your new email address. Valid for 5 minutes.";
+            case "USER_ACTIVATED" -> eventMessage != null
+                    ? eventMessage
+                    : "Great news! Your account has been activated. You can now log in and access all platform features.";
             case "USER_DELETED", "USER_DEACTIVATED" -> eventMessage != null
                     ? eventMessage
                     : "An update has been made to your account.";

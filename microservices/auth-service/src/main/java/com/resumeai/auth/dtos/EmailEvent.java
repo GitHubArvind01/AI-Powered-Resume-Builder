@@ -30,7 +30,7 @@ public class EmailEvent {
 
     /**
      * Describes why the email is being sent.
-     * Allowed values: REGISTER, FORGOT_PASSWORD, UPDATE_EMAIL, USER_DELETED, USER_DEACTIVATED
+     * Allowed values: REGISTER, FORGOT_PASSWORD, UPDATE_EMAIL, USER_DELETED, USER_DEACTIVATED, USER_ACTIVATED
      */
     private String purpose;
 }

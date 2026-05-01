@@ -163,7 +163,16 @@ public class AdminServiceImpl implements AdminService {
         }
 
         user.setActive(true);
-        return buildDetails(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+
+        publishUserActionEmail(
+                savedUser.getEmail(),
+                "Great news! Your account has been activated. You can now log in and use all features of the platform.",
+                "Account Activated",
+                "USER_ACTIVATED"
+        );
+
+        return buildDetails(savedUser);
     }
 
     private AdminUserDetailsDTO buildDetails(User user) {

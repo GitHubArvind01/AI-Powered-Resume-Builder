@@ -103,6 +103,22 @@ class UserServiceImpTest {
     }
 
     @Test
+    void testRegisterUser_InvalidOtpThrowsException() {
+        // Arrange: Set a specific OTP in the DB
+        mockUser.setOtpCode("123456");
+        mockUser.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
+        when(userRepository.findByEmail("test@gmail.com")).thenReturn(Optional.of(mockUser));
+
+        // Act & Assert: Provide a WRONG OTP ("654321")
+        BadRequestException exception = assertThrows(BadRequestException.class, () ->
+                userService.registerUser("test@gmail.com", "654321")
+        );
+
+        // FIX: Changed "one." to "OTP." at the end of the string
+        assertEquals("Invalid OTP. Please check the latest code from your email or request a new OTP.", exception.getMessage());
+    }
+
+    @Test
     void testLoginUser_Success() {
         LoginRequest request = new LoginRequest();
         request.setEmail("test@gmail.com");

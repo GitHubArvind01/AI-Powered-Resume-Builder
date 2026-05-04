@@ -1,4 +1,4 @@
-package com.resumeai.aiservice.service;
+package com.resumeai.aiservice;
 
 import java.util.List;
 import java.util.UUID;

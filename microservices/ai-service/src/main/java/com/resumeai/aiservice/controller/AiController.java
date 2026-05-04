@@ -19,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.resumeai.aiservice.dto.AiRequestDTO;
 import com.resumeai.aiservice.dto.AtsReportDTO;
 import com.resumeai.aiservice.dto.QuotaDTO;
-import com.resumeai.aiservice.service.AiService;
+import com.resumeai.aiservice.AiService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

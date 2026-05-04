@@ -44,14 +44,16 @@
 		<sonar.sources>src/main/java</sonar.sources>
 
 		<!-- Include ONLY service layer -->
-		<sonar.inclusions>**/service/**</sonar.inclusions>
+		<sonar.inclusions>
+			**/service/**,
+			**/controller/**
+		</sonar.inclusions>
 
 		<!-- Exclude non-business layers -->
 		<sonar.exclusions>
 			**/entity/**,
 			**/dto/**,
 			**/config/**,
-			**/controller/**,
 			**/exception/**,
 			**/repository/**
 		</sonar.exclusions>
@@ -246,6 +248,7 @@
 									<element>PACKAGE</element>
 									<includes>
 										<include>**.service.*</include>
+										<include>**.controller.*</include>
 									</includes>
 									<limits>
 										<limit>

@@ -57,8 +57,8 @@ spring:
           uri: lb://TEMPLATE-SERVICE
           predicates:
             - Path=/api/v1/templates/**
-          filters:
-            - AuthenticationFilter
+#          filters:
+#            - AuthenticationFilter
         # ================= PAYMENT-SERVICE =================
         # 1. PUBLIC CALLBACKS (No Filter)
         - id: payment-callback-service

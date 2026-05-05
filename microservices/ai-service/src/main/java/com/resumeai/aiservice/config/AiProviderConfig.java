@@ -23,6 +23,7 @@ public class AiProviderConfig {
 	@Data
 	public static class QuotaConfig {
 		private Integer freeTierMonthlyLimit;
+		private Integer premiumMonthlyLimit;
 	}
 }
 

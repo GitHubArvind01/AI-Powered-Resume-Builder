@@ -5,6 +5,8 @@ import com.google.genai.types.GenerateContentResponse;
 import com.resumeai.aiservice.config.AiProviderConfig;
 import com.resumeai.aiservice.exception.AiProviderException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -31,6 +33,11 @@ public class GeminiClient implements AiProviderClient {
 		}
 	}
 
+	@Retryable(
+			value = { Exception.class },
+			maxAttempts = 3, // It will try up to 3 times
+			backoff = @Backoff(delay = 2000, multiplier = 2.0) // Waits 2 seconds, then 4 seconds between tries
+	)
 	@Override
 	public String callAiProvider(String prompt) throws Exception {
 		if (!isKeyPresent()) {

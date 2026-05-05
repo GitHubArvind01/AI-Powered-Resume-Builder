@@ -3,6 +3,7 @@ package com.resumeai.aiservice.service;
 import java.util.List;
 
 import com.resumeai.aiservice.dto.AiRequestDTO;
+import com.resumeai.aiservice.dto.AiAssistantResponseDTO;
 import com.resumeai.aiservice.dto.AtsReportDTO;
 import com.resumeai.aiservice.dto.QuotaDTO;
 import com.resumeai.aiservice.dto.SimpleAtsResponseDTO;
@@ -30,6 +31,9 @@ public interface AiService {
 	 * Improve resume content
 	 */
 	AiRequestDTO improveResume(Long userId, Long resumeId, String resumeContent) throws Exception;
+
+	AiRequestDTO generateSectionContent(Long userId, Long resumeId, String sectionType, String context)
+			throws Exception;
 
 	/**
 	 * Check ATS compatibility with keyword matching and semantic similarity
@@ -70,5 +74,7 @@ public interface AiService {
 	 * Get remaining monthly quota for a user
 	 */
 	Integer getRemainingQuota(Long userId);
+
+	AiAssistantResponseDTO buildAssistantResponse(AiRequestDTO aiRequestDTO, Long userId);
 }
 

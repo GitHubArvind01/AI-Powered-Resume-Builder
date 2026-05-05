@@ -11,7 +11,6 @@ import com.resumeai.aiservice.exception.QuotaExceededException;
 import com.resumeai.aiservice.exception.ResourceNotFoundException;
 import com.resumeai.aiservice.mapper.AiRequestMapper;
 import com.resumeai.aiservice.repository.AiRequestRepository;
-import com.resumeai.aiservice.AiServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

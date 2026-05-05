@@ -5,6 +5,7 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,10 +16,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.stereotype.Service;
 
+import com.resumeai.aiservice.client.AuthUserClient;
 import com.resumeai.aiservice.client.GeminiClient;
 import com.resumeai.aiservice.config.AiProviderConfig;
 import com.resumeai.aiservice.dto.AiRequestDTO;
+import com.resumeai.aiservice.dto.AiAssistantResponseDTO;
 import com.resumeai.aiservice.dto.AtsReportDTO;
+import com.resumeai.aiservice.dto.AuthUserProfileDTO;
 import com.resumeai.aiservice.dto.QuotaDTO;
 import com.resumeai.aiservice.dto.SimpleAtsResponseDTO;
 import com.resumeai.aiservice.entity.AiRequest;
@@ -29,10 +33,10 @@ import com.resumeai.aiservice.exception.QuotaExceededException;
 import com.resumeai.aiservice.exception.ResourceNotFoundException;
 import com.resumeai.aiservice.mapper.AiRequestMapper;
 import com.resumeai.aiservice.repository.AiRequestRepository;
+import com.resumeai.aiservice.service.ResumeTextExtractionService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tika.Tika;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -44,7 +48,8 @@ public class AiServiceImpl implements AiService {
 	private final AiRequestMapper aiRequestMapper;
 	private final GeminiClient geminiClient;
 	private final AiProviderConfig aiProviderConfig;
-	private final Tika tika = new Tika();
+	private final ResumeTextExtractionService resumeTextExtractionService;
+	private final AuthUserClient authUserClient;
 
 	@Override
 	public AiRequestDTO generateSummary(Long userId, Long resumeId, String resumeContent) throws Exception {
@@ -80,27 +85,36 @@ public class AiServiceImpl implements AiService {
 	}
 
 	@Override
+	public AiRequestDTO generateSectionContent(Long userId, Long resumeId, String sectionType, String context)
+			throws Exception {
+		checkQuota(userId);
+		return processAiRequest(userId, resumeId, RequestType.IMPROVE, buildGeneratePrompt(sectionType, context));
+	}
+
+	@Override
 	public AtsReportDTO checkAtsCompatibility(Long userId, Long resumeId, String resumeContent, String jobDescription)
 			throws Exception {
 		checkQuota(userId);
 
 		String prompt = buildAtsPrompt(resumeContent, jobDescription);
-		AiRequestDTO response = processAiRequest(userId, resumeId, RequestType.ATS, prompt);
+		String aiResponseText = "";
 
-		// Parse ATS response and compute scores
-		return parseAtsResponse(userId, resumeId, response.getAiResponse(), jobDescription, resumeContent);
+		try {
+			AiRequestDTO response = processAiRequest(userId, resumeId, RequestType.ATS, prompt);
+			aiResponseText = response.getAiResponse();
+		} catch (AiProviderException e) {
+			log.warn("Gemini is down (503). Falling back to local keyword-bag algorithm for ATS check.");
+			// aiResponseText remains empty, which will force parseAtsResponse to use the local fallback
+			aiResponseText = "AI Service temporarily unavailable. Using local fallback algorithm.";
+		}
+
+		// Parse ATS response and compute scores (If AI failed, this will now safely run Stage 2 fallback)
+		return parseAtsResponse(userId, resumeId, aiResponseText, jobDescription, resumeContent);
 	}
 
 	@Override
 	public SimpleAtsResponseDTO analyzeResume(Long userId, MultipartFile file) throws Exception {
-		if (file == null || file.isEmpty()) {
-			throw new IllegalArgumentException("Please choose a resume file before starting ATS analysis.");
-		}
-
-		String resumeContent = tika.parseToString(file.getInputStream());
-		if (resumeContent == null || resumeContent.trim().isEmpty()) {
-			throw new IllegalArgumentException("We couldn't extract readable text from this file. Please try another file.");
-		}
+		String resumeContent = resumeTextExtractionService.extractText(file);
 
 		AtsReportDTO report = checkAtsCompatibility(userId, null, resumeContent, "");
 		List<String> suggestions = new ArrayList<>(report.getImprovements() == null ? List.of() : report.getImprovements());
@@ -111,6 +125,9 @@ public class AiServiceImpl implements AiService {
 
 		return SimpleAtsResponseDTO.builder()
 				.score(report.getAtsScore())
+				.keywordMatchPercentage(calculateKeywordMatchPercentage(report))
+				.keywordsMatched(report.getMatchedKeywords() == null ? List.of() : report.getMatchedKeywords())
+				.missingKeywords(report.getMissingKeywords() == null ? List.of() : report.getMissingKeywords())
 				.suggestions(suggestions)
 				.build();
 	}
@@ -156,16 +173,17 @@ public class AiServiceImpl implements AiService {
 	@Override
 	public QuotaDTO getQuotaInfo(Long userId) {
 		Integer remaining = getRemainingQuota(userId);
-		Integer totalQuota = aiProviderConfig.getQuota() != null ? aiProviderConfig.getQuota().getFreeTierMonthlyLimit() : 100;
+		Integer totalQuota = getQuotaLimit(userId);
 		Integer used = totalQuota - remaining;
+		String tier = resolveTier(userId);
 
 		return QuotaDTO.builder().userId(userId).totalMonthlyQuota(totalQuota).usedQuota(used)
-				.remainingQuota(remaining).tierType("FREE").build();
+				.remainingQuota(remaining).tierType(tier).build();
 	}
 
 	@Override
 	public Integer getRemainingQuota(Long userId) {
-		Integer totalQuota = aiProviderConfig.getQuota() != null ? aiProviderConfig.getQuota().getFreeTierMonthlyLimit() : 100;
+		Integer totalQuota = getQuotaLimit(userId);
 		LocalDateTime startOfMonth = LocalDateTime.of(YearMonth.now().atDay(1), java.time.LocalTime.MIN);
 
 		Integer usedQuota = aiRequestRepository.countByUserIdAndCreatedAtAfter(userId, startOfMonth);
@@ -176,14 +194,52 @@ public class AiServiceImpl implements AiService {
 		return remaining;
 	}
 
+	@Override
+	public AiAssistantResponseDTO buildAssistantResponse(AiRequestDTO aiRequestDTO, Long userId) {
+		Integer remaining = getRemainingQuota(userId);
+		return AiAssistantResponseDTO.builder()
+				.content(aiRequestDTO.getAiResponse())
+				.remainingUsage(remaining)
+				.limitReached(remaining <= 0)
+				.suggestions(List.of("Tailor the generated draft to measurable outcomes before saving."))
+				.build();
+	}
+
 	// Private helper methods
 	private void checkQuota(Long userId) {
 		Integer remainingQuota = getRemainingQuota(userId);
 		if (remainingQuota <= 0) {
 			throw new QuotaExceededException(
-					"Monthly quota exceeded for user: " + userId + ". Please upgrade your plan.");
+					"AI request limit reached for this account. Free users can make 5 AI requests. Please upgrade your plan to continue.");
 		}
 		log.debug("Quota check passed for user: {}, remaining: {}", userId, remainingQuota);
+	}
+
+	private Integer getQuotaLimit(Long userId) {
+		String tier = resolveTier(userId);
+		AiProviderConfig.QuotaConfig quotaConfig = aiProviderConfig.getQuota();
+		if (!"FREE".equals(tier)) {
+			return quotaConfig != null && quotaConfig.getPremiumMonthlyLimit() != null
+					? quotaConfig.getPremiumMonthlyLimit()
+					: 500;
+		}
+
+		return quotaConfig != null && quotaConfig.getFreeTierMonthlyLimit() != null
+				? quotaConfig.getFreeTierMonthlyLimit()
+				: 5;
+	}
+
+	private String resolveTier(Long userId) {
+		try {
+			AuthUserProfileDTO user = authUserClient.getUserById(userId);
+			String subscriptionPlan = user != null && user.getSubscriptionPlan() != null
+					? user.getSubscriptionPlan().toUpperCase(Locale.ROOT)
+					: "FREE";
+			return "FREE".equals(subscriptionPlan) ? "FREE" : subscriptionPlan;
+		} catch (Exception exception) {
+			log.warn("Unable to resolve subscription plan for user {}. Falling back to FREE tier.", userId);
+			return "FREE";
+		}
 	}
 
 	private AiRequestDTO processAiRequest(Long userId, Long resumeId, RequestType requestType, String prompt)
@@ -406,6 +462,12 @@ public class AiServiceImpl implements AiService {
 				+ resumeContent;
 	}
 
+	private String buildGeneratePrompt(String sectionType, String context) {
+		return "Generate premium, ATS-friendly resume content for the " + sectionType + " section. "
+				+ "Use concise, credible language with measurable impact where appropriate. "
+				+ "Return only the final content without commentary.\n\nContext:\n" + context;
+	}
+
 	private String buildAtsPrompt(String resumeContent, String jobDescription) {
 		boolean hasJobDescription = jobDescription != null && !jobDescription.trim().isEmpty();
 
@@ -441,6 +503,15 @@ public class AiServiceImpl implements AiService {
 	private String buildTranslatePrompt(String resumeContent, String targetLanguage) {
 		return "Translate the following resume content to " + targetLanguage
 				+ ". Maintain professional formatting:\n\n" + resumeContent;
+	}
+
+	private Integer calculateKeywordMatchPercentage(AtsReportDTO report) {
+		int total = report.getTotalKeywordsChecked() == null ? 0 : report.getTotalKeywordsChecked();
+		int matched = report.getKeywordsMatched() == null ? 0 : report.getKeywordsMatched();
+		if (total <= 0) {
+			return report.getAtsScore();
+		}
+		return Math.min(100, Math.max(0, (int) Math.round((matched * 100.0) / total)));
 	}
 }
 

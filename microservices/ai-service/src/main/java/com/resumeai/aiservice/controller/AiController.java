@@ -3,7 +3,6 @@ package com.resumeai.aiservice.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.tika.Tika;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,9 +16,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.resumeai.aiservice.dto.AiRequestDTO;
+import com.resumeai.aiservice.dto.AiAssistantResponseDTO;
 import com.resumeai.aiservice.dto.AtsReportDTO;
 import com.resumeai.aiservice.dto.QuotaDTO;
-import com.resumeai.aiservice.AiService;
+import com.resumeai.aiservice.dto.SimpleAtsResponseDTO;
+import com.resumeai.aiservice.service.AiService;
+import com.resumeai.aiservice.service.ResumeTextExtractionService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -41,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AiController {
 
 	private final AiService aiService;
-	private final Tika tika = new Tika();
+	private final ResumeTextExtractionService resumeTextExtractionService;
 
 	/**
 	 * Welcome endpoint to check if service is running
@@ -78,18 +80,31 @@ public class AiController {
 		log.info("Improving content for user: {}, resumeId: {}, type: {}", request.getUserId(), request.getResumeId(),
 				request.getType());
 
-		AiRequestDTO response = switch (request.getType()) {
+		boolean generateMode = "generate".equalsIgnoreCase(request.getAction());
+		AiRequestDTO response = ifGenerateElseImprove(request, generateMode);
+		AiAssistantResponseDTO assistantResponse = aiService.buildAssistantResponse(response, request.getUserId());
+
+		return ResponseEntity.ok(new ImproveContentResponse(
+				generateMode ? "" : request.getText(),
+				assistantResponse.getContent(),
+				assistantResponse.getSuggestions(),
+				0.95,
+				assistantResponse.getRemainingUsage(),
+				assistantResponse.isLimitReached()));
+	}
+
+	private AiRequestDTO ifGenerateElseImprove(ImproveContentRequest request, boolean generateMode) throws Exception {
+		if (generateMode) {
+			return aiService.generateSectionContent(request.getUserId(), request.getResumeId(), request.getType(),
+					request.getContext() == null ? request.getText() : request.getContext());
+		}
+
+		return switch (request.getType()) {
 			case "summary" -> aiService.generateSummary(request.getUserId(), request.getResumeId(), request.getText());
 			case "bullets" -> aiService.generateBullets(request.getUserId(), request.getResumeId(), request.getText());
 			case "skills" -> aiService.extractSkills(request.getUserId(), request.getResumeId(), request.getText());
 			default -> aiService.improveResume(request.getUserId(), request.getResumeId(), request.getText());
 		};
-
-		return ResponseEntity.ok(new ImproveContentResponse(
-				request.getText(),
-				response.getAiResponse(),
-				List.of("Improved with " + response.getModel()),
-				0.95));
 	}
 
 	@GetMapping("/usage/{userId}")
@@ -161,18 +176,20 @@ public class AiController {
 			@RequestParam("file") MultipartFile file,
 			@RequestParam(value = "jobDescription", required = false, defaultValue = "") String jobDescription)
 			throws Exception {
-		if (file.isEmpty()) {
-			throw new IllegalArgumentException("Please choose a resume file before starting ATS analysis.");
-		}
-
-		String resumeContent = tika.parseToString(file.getInputStream());
-		if (resumeContent == null || resumeContent.trim().isEmpty()) {
-			throw new IllegalArgumentException("We couldn't extract readable text from this file. Please try another file or paste the resume content.");
-		}
+		String resumeContent = resumeTextExtractionService.extractText(file);
 
 		log.info("Checking ATS compatibility for uploaded file: {}, user: {}", file.getOriginalFilename(), userId);
 		AtsReportDTO response = aiService.checkAtsCompatibility(userId, null, resumeContent, jobDescription);
 		return ResponseEntity.status(HttpStatus.OK).body(response);
+	}
+
+	@PostMapping("/ats-check")
+	@Operation(summary = "Check ATS Compatibility from uploaded resume",
+			description = "Dashboard-friendly endpoint that accepts a resume file upload and returns a simplified ATS result.")
+	public ResponseEntity<SimpleAtsResponseDTO> checkATS(
+			@RequestHeader("X-User-Id") Long userId,
+			@RequestParam("file") MultipartFile file) throws Exception {
+		return ResponseEntity.ok(aiService.analyzeResume(userId, file));
 	}
 
 	@PostMapping("/tailor-resume")
@@ -258,6 +275,7 @@ public class AiController {
 		private String text;
 		@NotBlank
 		private String type;
+		private String action;
 		private String context;
 
 		public Long getUserId() {
@@ -299,6 +317,14 @@ public class AiController {
 		public void setContext(String context) {
 			this.context = context;
 		}
+
+		public String getAction() {
+			return action;
+		}
+
+		public void setAction(String action) {
+			this.action = action;
+		}
 	}
 
 	public static class ImproveContentResponse {
@@ -306,12 +332,17 @@ public class AiController {
 		private final String improvedText;
 		private final List<String> suggestions;
 		private final double confidence;
+		private final Integer remainingUsage;
+		private final boolean limitReached;
 
-		public ImproveContentResponse(String originalText, String improvedText, List<String> suggestions, double confidence) {
+		public ImproveContentResponse(String originalText, String improvedText, List<String> suggestions,
+				double confidence, Integer remainingUsage, boolean limitReached) {
 			this.originalText = originalText;
 			this.improvedText = improvedText;
 			this.suggestions = suggestions;
 			this.confidence = confidence;
+			this.remainingUsage = remainingUsage;
+			this.limitReached = limitReached;
 		}
 
 		public String getOriginalText() {
@@ -328,6 +359,14 @@ public class AiController {
 
 		public double getConfidence() {
 			return confidence;
+		}
+
+		public Integer getRemainingUsage() {
+			return remainingUsage;
+		}
+
+		public boolean isLimitReached() {
+			return limitReached;
 		}
 	}
 

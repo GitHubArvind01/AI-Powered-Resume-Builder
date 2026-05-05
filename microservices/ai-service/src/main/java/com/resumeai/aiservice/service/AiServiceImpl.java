@@ -1,4 +1,4 @@
-package com.resumeai.aiservice;
+package com.resumeai.aiservice.service;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -20,6 +20,7 @@ import com.resumeai.aiservice.config.AiProviderConfig;
 import com.resumeai.aiservice.dto.AiRequestDTO;
 import com.resumeai.aiservice.dto.AtsReportDTO;
 import com.resumeai.aiservice.dto.QuotaDTO;
+import com.resumeai.aiservice.dto.SimpleAtsResponseDTO;
 import com.resumeai.aiservice.entity.AiRequest;
 import com.resumeai.aiservice.entity.AiRequest.RequestStatus;
 import com.resumeai.aiservice.entity.AiRequest.RequestType;
@@ -31,6 +32,8 @@ import com.resumeai.aiservice.repository.AiRequestRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tika.Tika;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +44,7 @@ public class AiServiceImpl implements AiService {
 	private final AiRequestMapper aiRequestMapper;
 	private final GeminiClient geminiClient;
 	private final AiProviderConfig aiProviderConfig;
+	private final Tika tika = new Tika();
 
 	@Override
 	public AiRequestDTO generateSummary(Long userId, Long resumeId, String resumeContent) throws Exception {
@@ -85,6 +89,30 @@ public class AiServiceImpl implements AiService {
 
 		// Parse ATS response and compute scores
 		return parseAtsResponse(userId, resumeId, response.getAiResponse(), jobDescription, resumeContent);
+	}
+
+	@Override
+	public SimpleAtsResponseDTO analyzeResume(Long userId, MultipartFile file) throws Exception {
+		if (file == null || file.isEmpty()) {
+			throw new IllegalArgumentException("Please choose a resume file before starting ATS analysis.");
+		}
+
+		String resumeContent = tika.parseToString(file.getInputStream());
+		if (resumeContent == null || resumeContent.trim().isEmpty()) {
+			throw new IllegalArgumentException("We couldn't extract readable text from this file. Please try another file.");
+		}
+
+		AtsReportDTO report = checkAtsCompatibility(userId, null, resumeContent, "");
+		List<String> suggestions = new ArrayList<>(report.getImprovements() == null ? List.of() : report.getImprovements());
+
+		if (suggestions.isEmpty() && report.getOverallFeedback() != null && !report.getOverallFeedback().isBlank()) {
+			suggestions.add(report.getOverallFeedback());
+		}
+
+		return SimpleAtsResponseDTO.builder()
+				.score(report.getAtsScore())
+				.suggestions(suggestions)
+				.build();
 	}
 
 	@Override

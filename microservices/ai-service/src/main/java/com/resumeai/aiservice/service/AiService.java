@@ -1,12 +1,12 @@
-package com.resumeai.aiservice;
+package com.resumeai.aiservice.service;
 
 import java.util.List;
-import java.util.UUID;
 
 import com.resumeai.aiservice.dto.AiRequestDTO;
 import com.resumeai.aiservice.dto.AtsReportDTO;
 import com.resumeai.aiservice.dto.QuotaDTO;
-import com.resumeai.aiservice.entity.AiRequest;
+import com.resumeai.aiservice.dto.SimpleAtsResponseDTO;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface AiService {
 
@@ -36,6 +36,8 @@ public interface AiService {
 	 */
 	AtsReportDTO checkAtsCompatibility(Long userId, Long resumeId, String resumeContent, String jobDescription)
 			throws Exception;
+
+	SimpleAtsResponseDTO analyzeResume(Long userId, MultipartFile file) throws Exception;
 
 	/**
 	 * Extract skills from resume

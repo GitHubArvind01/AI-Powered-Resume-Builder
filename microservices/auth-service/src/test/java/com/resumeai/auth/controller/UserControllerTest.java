@@ -122,7 +122,7 @@ class UserControllerTest {
     void testUpdateProfile() throws Exception {
         UpdateProfileRequest request = new UpdateProfileRequest();
         when(userService.updateProfile(eq("test@gmail.com"), any(UpdateProfileRequest.class)))
-                .thenReturn(new UserResponseDTO());
+                .thenReturn(new AuthResponse());
 
         mockMvc.perform(post("/api/v1/auth/update-profile/test@gmail.com")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -132,7 +132,7 @@ class UserControllerTest {
 
     @Test
     void testVerifyEmailUpdate() throws Exception {
-        when(userService.verifyEmailUpdate("test@gmail.com", "123456")).thenReturn("Email Updated");
+        when(userService.verifyEmailUpdate("test@gmail.com", "123456")).thenReturn(new AuthResponse());
 
         mockMvc.perform(post("/api/v1/auth/verify-email-update")
                         .param("currentEmail", "test@gmail.com")

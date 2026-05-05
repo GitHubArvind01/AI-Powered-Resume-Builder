@@ -176,7 +176,7 @@ class UserServiceImpTest {
         when(userRepository.findByEmail("test@gmail.com")).thenReturn(Optional.of(mockUser));
         when(userRepository.findByEmail("newemail@gmail.com")).thenReturn(Optional.empty()); // Email available
 
-        UserResponseDTO response = userService.updateProfile("test@gmail.com", request);
+        AuthResponse response = userService.updateProfile("test@gmail.com", request);
 
         assertEquals("Updated Name", mockUser.getFullName());
         assertEquals("newemail@gmail.com", mockUser.getPendingEmail());
@@ -191,9 +191,9 @@ class UserServiceImpTest {
 
         when(userRepository.findByEmail("test@gmail.com")).thenReturn(Optional.of(mockUser));
 
-        String response = userService.verifyEmailUpdate("test@gmail.com", "123456");
+        AuthResponse response = userService.verifyEmailUpdate("test@gmail.com", "123456");
 
-        assertEquals("Email updated successfully to newemail@gmail.com", response);
+        assertEquals("Email updated successfully to newemail@gmail.com", response.getMessage());
         assertEquals("newemail@gmail.com", mockUser.getEmail());
         assertNull(mockUser.getPendingEmail());
     }

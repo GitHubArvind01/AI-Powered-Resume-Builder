@@ -36,10 +36,10 @@ public interface UserService {
      * Update User
      */
     void updateSubscription(String email, String plan);
+
+    AuthResponse updateProfile(String email, UpdateProfileRequest updateUser);
     
-    UserResponseDTO updateProfile(String email, UpdateProfileRequest updateUser);
-    
-    public String verifyEmailUpdate(String currentEmail, String otp);
+    public AuthResponse verifyEmailUpdate(String currentEmail, String otp);
     
     public UserResponseDTO getUserByEmail(String email);
 

@@ -256,75 +256,94 @@ public class UserServiceImp implements UserService {
 
 	@Override
 	@Transactional
-	public UserResponseDTO updateProfile(String email, UpdateProfileRequest updateUser) {
-	    User userdb = userRepository.findByEmail(email)
-	            .orElseThrow(() -> new RuntimeException("User not found!"));
+	public AuthResponse updateProfile(String email, UpdateProfileRequest updateUser) {
 
-	    boolean isEmailChanging = !userdb.getEmail().equalsIgnoreCase(updateUser.getEmail());
+		User userdb = userRepository.findByEmail(email)
+				.orElseThrow(() -> new RuntimeException("User not found!"));
 
-	    if (isEmailChanging) {
-	        // Check if the NEW email is already taken
-	        if (userRepository.findByEmail(updateUser.getEmail()).isPresent()) {
-	            throw new RuntimeException("Email already in use by another account!");
-	        }
+		boolean isEmailChanging = !userdb.getEmail().equalsIgnoreCase(updateUser.getEmail());
 
-	        // Store the new email as PENDING, do not change the main email yet
-	        userdb.setPendingEmail(updateUser.getEmail());
-	        
-	        String otp = generateOtp();
-	        userdb.setOtpCode(otp);
-	        userdb.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
-	        
-        // Publish email event asynchronously via RabbitMQ (non-blocking)
-        EmailEvent event = EmailEvent.builder()
-                .to(updateUser.getEmail())
-                .otp(otp)
-                .subject("Email Update Verification")
-                .purpose("UPDATE_EMAIL")
-                .build();
-        emailEventProducer.publishEmailEvent(event);
-        log.info("[AUTH] Email-update OTP event published for pendingEmail={}", updateUser.getEmail());
-    }
+		// Update basic fields
+		userdb.setFullName(updateUser.getFullName());
+		userdb.setPhone(updateUser.getPhone());
 
-	    // Update other non-sensitive fields immediately
-	    userdb.setFullName(updateUser.getFullName());
-	    userdb.setPhone(updateUser.getPhone());
+		if (isEmailChanging) {
 
-	    userRepository.save(userdb);
+			// Check if new email already exists
+			if (userRepository.findByEmail(updateUser.getEmail()).isPresent()) {
+				throw new RuntimeException("Email already in use by another account!");
+			}
 
-	    return new UserResponseDTO(
-	            userdb.getFullName(), 
-	            userdb.getEmail(), // Still returns the old email as active
-	            userdb.getPhone(), 
-	            userdb.getRole(), 
-	            userdb.isActive(), 
-	            userdb.getSubscriptionPlan()
-	    );
+			// Store pending email (DO NOT replace original yet)
+			userdb.setPendingEmail(updateUser.getEmail());
+
+			// Generate OTP
+			String otp = generateOtp();
+			userdb.setOtpCode(otp);
+			userdb.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
+
+			// Send OTP via RabbitMQ
+			EmailEvent event = EmailEvent.builder()
+					.to(updateUser.getEmail())
+					.otp(otp)
+					.subject("Email Update Verification")
+					.purpose("UPDATE_EMAIL")
+					.build();
+
+			emailEventProducer.publishEmailEvent(event);
+			log.info("[AUTH] Email-update OTP event published for pendingEmail={}", updateUser.getEmail());
+
+			// IMPORTANT: deactivate account until verification
+			userdb.setActive(false);
+		}
+
+		// Save user
+		userRepository.save(userdb);
+
+		// ALWAYS generate NEW TOKEN (even if email not changed)
+		String newToken = jwtService.generateToken(userdb);
+
+		// Response message handling
+		String message = isEmailChanging
+				? "Email changed. Please verify your new email. You will be logged out."
+				: "Profile updated successfully";
+
+		return new AuthResponse(newToken, message);
 	}
-	
+
+	@Override
 	@Transactional
-	public String verifyEmailUpdate(String currentEmail, String otp) {
-	    User user = userRepository.findByEmail(currentEmail)
-	            .orElseThrow(() -> new RuntimeException("User not found!"));
+	public AuthResponse verifyEmailUpdate(String currentEmail, String otp) {
 
-	    // 1. Validate OTP
-	    if (user.getOtpCode() == null || !user.getOtpCode().equals(otp)) {
-	        throw new RuntimeException("Invalid OTP!");
-	    }
-	    if (user.getOtpExpiry().isBefore(LocalDateTime.now())) {
-	        throw new RuntimeException("OTP Expired!");
-	    }
+		User user = userRepository.findByEmail(currentEmail)
+				.orElseThrow(() -> new RuntimeException("User not found!"));
 
-	    // 2. Perform the swap
-	    if (user.getPendingEmail() != null) {
-	        user.setEmail(user.getPendingEmail());
-	        user.setPendingEmail(null); // Clear the pending status
-	        user.setOtpCode(null);
-	        userRepository.save(user);
-	        return "Email updated successfully to " + user.getEmail();
-	    }
+		// Validate OTP
+		if (user.getOtpCode() == null || !user.getOtpCode().equals(otp)) {
+			throw new RuntimeException("Invalid OTP!");
+		}
 
-	    throw new RuntimeException("No pending email update found.");
+		if (user.getOtpExpiry() == null || user.getOtpExpiry().isBefore(LocalDateTime.now())) {
+			throw new RuntimeException("OTP expired!");
+		}
+
+		// Apply email change
+		user.setEmail(user.getPendingEmail());
+		user.setPendingEmail(null);
+
+		// Clear OTP
+		user.setOtpCode(null);
+		user.setOtpExpiry(null);
+
+		// Reactivate account
+		user.setActive(true);
+
+		userRepository.save(user);
+
+		// Generate NEW TOKEN with UPDATED EMAIL
+		String newToken = jwtService.generateToken(user);
+
+		return new AuthResponse(newToken, "Email verified successfully. You can continue.");
 	}
 
 	@Override

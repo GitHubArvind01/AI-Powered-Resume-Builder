@@ -177,15 +177,15 @@ public class UserController {
             content = @Content(examples = @ExampleObject(value = "{\"fullName\":\"Ravi K\",\"email\":\"newravi@gmail.com\",\"phone\":\"1234567890\"}"))
         )
     )
-    public ResponseEntity<UserResponseDTO> updateProfile(@PathVariable String email, @RequestBody UpdateProfileRequest updateRequest) {
-        return ResponseEntity.ok(userService.updateProfile(email, updateRequest));
-    }
+	public ResponseEntity<AuthResponse> updateProfile(@PathVariable String email, @RequestBody UpdateProfileRequest updateRequest) {
+		return ResponseEntity.ok(userService.updateProfile(email, updateRequest));
+	}
 
     @PostMapping("/verify-email-update")
     @Operation(summary = "8b. Verify Email Update OTP", description = "Finalizes the email change after OTP verification")
-    public ResponseEntity<String> verifyEmailUpdate(@RequestParam String currentEmail, @RequestParam String otp) {
-        return ResponseEntity.ok(userService.verifyEmailUpdate(currentEmail, otp));
-    }
+	public ResponseEntity<AuthResponse> verifyEmailUpdate(@RequestParam String currentEmail, @RequestParam String otp) {
+		return ResponseEntity.ok(userService.verifyEmailUpdate(currentEmail, otp));
+	}
 
     @PostMapping("/update-subscription")
     @Operation(summary = "9. Update Subscription")

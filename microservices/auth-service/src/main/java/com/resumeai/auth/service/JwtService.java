@@ -35,6 +35,8 @@ public class JwtService {
 		claims.put("userId", user.getId());
 		claims.put("role", user.getRole());
 		claims.put("subscriptionPlan", user.getSubscriptionPlan());
+		claims.put("premiumActive", Boolean.TRUE.equals(user.getPremiumActive()));
+		claims.put("subscriptionStatus", user.getSubscriptionStatus());
 		return Jwts.builder()
 				.setClaims(claims)
 				.setSubject(user.getEmail())

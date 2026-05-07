@@ -26,6 +26,7 @@ public class PaymentResponseDTO {
     private BigDecimal amount;
     private String currency;
     private String description;
+    private String planType;
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -42,6 +43,7 @@ public class PaymentResponseDTO {
                 .amount(record.getAmount())
                 .currency(record.getCurrency())
                 .description(record.getDescription())
+                .planType(record.getPlanType())
                 .status(record.getStatus().name())
                 .createdAt(record.getCreatedAt())
                 .updatedAt(record.getUpdatedAt())

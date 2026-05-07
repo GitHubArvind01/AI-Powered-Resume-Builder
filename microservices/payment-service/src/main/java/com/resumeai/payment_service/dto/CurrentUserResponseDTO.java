@@ -1,4 +1,4 @@
-package com.resumeai.auth.dtos;
+package com.resumeai.payment_service.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

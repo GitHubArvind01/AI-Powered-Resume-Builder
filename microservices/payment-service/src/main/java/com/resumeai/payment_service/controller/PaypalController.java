@@ -3,6 +3,7 @@ package com.resumeai.payment_service.controller;
 import com.resumeai.payment_service.dto.Order;
 import com.resumeai.payment_service.dto.PaymentLinkResponse;
 import com.resumeai.payment_service.dto.PaymentResponseDTO;
+import com.resumeai.payment_service.dto.PaymentVerificationResponseDTO;
 import com.resumeai.payment_service.service.PaypalService;
 import com.paypal.api.payments.Links;
 import com.paypal.api.payments.Payment;
@@ -86,7 +87,8 @@ public class PaypalController {
                 order.getDescription(),
                 backendCancelUrl,
                 backendSuccessUrl,
-                userId
+                userId,
+                order.getPlanType()
         );
 
         // Extract approval URL from PayPal response
@@ -141,7 +143,7 @@ public class PaypalController {
 
     @GetMapping("/verify/{paymentId}")
     @Operation(summary = "Verify completed payment", description = "Confirms that a redirected payment was completed for the authenticated user")
-    public ResponseEntity<PaymentResponseDTO> verifyPayment(
+    public ResponseEntity<PaymentVerificationResponseDTO> verifyPayment(
             @PathVariable String paymentId,
             @RequestHeader(value = "X-User-Id", required = true) Long userId) {
 

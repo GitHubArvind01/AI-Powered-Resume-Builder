@@ -47,6 +47,9 @@ public class PaymentRecord {
     @Column(length = 500)
     private String description;
 
+    @Column(nullable = false, length = 50)
+    private String planType;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentStatus status;

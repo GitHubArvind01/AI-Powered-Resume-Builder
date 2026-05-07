@@ -1,12 +1,14 @@
 package com.resumeai.payment_service.config;
 
+import com.resumeai.payment_service.dto.AuthResponseDTO;
+import com.resumeai.payment_service.dto.SubscriptionUpdateRequest;
 import com.resumeai.payment_service.dto.UserResponseDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(name = "AUTH-SERVICE")
 public interface AuthClient {
@@ -17,5 +19,5 @@ public interface AuthClient {
 
     // Matches @PostMapping("/update-subscription") in UserController
     @PostMapping("/api/v1/auth/update-subscription")
-    void updateSubscription(@RequestParam("email") String email, @RequestParam("plan") String plan);
+    ResponseEntity<AuthResponseDTO> updateSubscription(@RequestBody SubscriptionUpdateRequest request);
 }

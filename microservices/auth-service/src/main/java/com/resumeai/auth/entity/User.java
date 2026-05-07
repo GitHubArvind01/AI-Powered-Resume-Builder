@@ -31,6 +31,12 @@ public class User {
     private LocalDateTime otpExpiry;
     private boolean isActive;
     private String subscriptionPlan;
+    private Boolean premiumActive;
+    private String subscriptionStatus;
+    private LocalDateTime subscriptionStartDate;
+    private LocalDateTime subscriptionEndDate;
+    private String paymentStatus;
+    private String lastPaymentId;
 
     private LocalDateTime createdAt = LocalDateTime.now();
 }

@@ -2,20 +2,24 @@ package com.resumeai.auth.service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.resumeai.auth.dtos.AuthResponse;
+import com.resumeai.auth.dtos.CurrentUserResponseDTO;
 import com.resumeai.auth.dtos.EmailEvent;
 import com.resumeai.auth.dtos.LoginRequest;
 import com.resumeai.auth.dtos.RegisterRequest;
+import com.resumeai.auth.dtos.SubscriptionUpdateRequest;
 import com.resumeai.auth.dtos.UpdateProfileRequest;
 import com.resumeai.auth.dtos.UserResponseDTO;
-import com.resumeai.auth.dtos.CurrentUserResponseDTO;
 import com.resumeai.auth.entity.User;
 import com.resumeai.auth.exception.BadRequestException;
 import com.resumeai.auth.exception.UnauthorizedException;
@@ -29,53 +33,49 @@ import lombok.RequiredArgsConstructor;
 @Service
 public class UserServiceImp implements UserService {
 
-	private static final Logger log = LoggerFactory.getLogger(UserServiceImp.class);
-	private static final SecureRandom random = new SecureRandom();
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImp.class);
+    private static final SecureRandom random = new SecureRandom();
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
-	private final UserRepository userRepository;
-	private final PasswordEncoder passwordEncoder;
-	private final JwtService jwtService;
-	private final EmailEventProducer emailEventProducer;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final EmailEventProducer emailEventProducer;
 
-	// register request
-	@Transactional
-	@Override
+    @Transactional
+    @Override
     public String registerRequest(RegisterRequest registerRequest) {
         String normalizedEmail = normalizeEmail(registerRequest.getEmail());
-        // 1. Check if user exists
         Optional<User> userOptional = userRepository.findByEmail(normalizedEmail);
 
         User user;
         if (userOptional.isPresent()) {
             user = userOptional.get();
 
-            // If user is already active, prevent re-registration
             if (user.isActive()) {
                 throw new RuntimeException("User already registered with this email!");
             }
 
-            // If user is inactive, update their info (in case they changed name/phone/pass)
             updateUserDetails(user, registerRequest);
         } else {
-            // Create a brand new user
             user = new User();
             user.setFullName(registerRequest.getFullName());
             user.setEmail(normalizedEmail);
             user.setRole("USER");
             user.setSubscriptionPlan("FREE");
+            user.setPremiumActive(false);
+            user.setSubscriptionStatus("FREE");
+            user.setPaymentStatus("UNPAID");
             user.setActive(false);
             updateUserDetails(user, registerRequest);
         }
 
-        // 2. Generate and set OTP + Expiry (Refresh on every request)
         String otp = generateOtp();
         user.setOtpCode(otp);
         user.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
 
-        // 3. Save to Database
         userRepository.save(user);
 
-        // 4. Publish email event asynchronously via RabbitMQ (non-blocking)
         EmailEvent event = EmailEvent.builder()
                 .to(user.getEmail())
                 .otp(otp)
@@ -91,289 +91,372 @@ public class UserServiceImp implements UserService {
     private void updateUserDetails(User user, RegisterRequest request) {
         user.setFullName(request.getFullName());
         user.setPhone(request.getPhone());
-        // here I Hash the password immediately
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
     }
 
-	@Override
-	public AuthResponse registerUser(String email, String otp) {
-		User userdb = userRepository.findByEmail(normalizeEmail(email))
-				.orElseThrow(() -> new BadRequestException("We couldn't find a pending registration for that email. Please request a new OTP and try again."));
-		String normalizedOtp = normalizeOtp(otp);
+    @Override
+    public AuthResponse registerUser(String email, String otp) {
+        User userdb = userRepository.findByEmail(normalizeEmail(email))
+                .orElseThrow(() -> new BadRequestException("We couldn't find a pending registration for that email. Please request a new OTP and try again."));
+        String normalizedOtp = normalizeOtp(otp);
 
-		/*
-		 * Here First we validate the OTP with our DB
-		 */
-		if (userdb.getOtpCode() == null || !userdb.getOtpCode().equals(normalizedOtp)) {
-			throw new BadRequestException("Invalid OTP. Please check the latest code from your email or request a new OTP.");
-		}
+        if (userdb.getOtpCode() == null || !userdb.getOtpCode().equals(normalizedOtp)) {
+            throw new BadRequestException("Invalid OTP. Please check the latest code from your email or request a new OTP.");
+        }
 
-		/*
-		 * here - Validatation of OTP is expire or not
-		 */
-		if (userdb.getOtpExpiry() == null || userdb.getOtpExpiry().isBefore(LocalDateTime.now())) {
-			throw new BadRequestException("OTP expired. Please request a new OTP and try again.");
-		}
+        if (userdb.getOtpExpiry() == null || userdb.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("OTP expired. Please request a new OTP and try again.");
+        }
 
-		userdb.setActive(true);
-		userdb.setOtpCode(null);
-		userdb.setOtpExpiry(null);
-		userRepository.save(userdb);
-		String token = jwtService.generateToken(userdb);
-		return new AuthResponse(token, "User Register success");
-	}
+        userdb.setActive(true);
+        userdb.setOtpCode(null);
+        userdb.setOtpExpiry(null);
+        ensureFreeDefaults(userdb);
+        userRepository.save(userdb);
+        return buildAuthResponse(userdb, "User Register success");
+    }
 
-	// login
-	@Override
-	public AuthResponse loginUser(LoginRequest loginRequest) {
-		/*
-		 * first we check email that exist in DB
-		 */
-		User userdb = userRepository.findByEmail(loginRequest.getEmail())
-				.orElseThrow(() -> new RuntimeException("User not found!"));
+    @Override
+    public AuthResponse loginUser(LoginRequest loginRequest) {
+        User userdb = userRepository.findByEmail(normalizeEmail(loginRequest.getEmail()))
+                .orElseThrow(() -> new RuntimeException("User not found!"));
 
-		if (!passwordEncoder.matches(loginRequest.getPassword(), userdb.getPasswordHash())) {
-			throw new RuntimeException("Invalid Password!");
-		}
-		
-		/*
-		 * here - CHECK ACTIVE STATUS
-		 */
-		if(!userdb.isActive()) {
-			throw new RuntimeException("Account is not verified. Please verify your email using the OTP sent during registration.");
-		}
-		
-		/*
-		 * only Active user can login
-		 */
-		String token = jwtService.generateToken(userdb);
-		return new AuthResponse(token, "Login Success");
-	}
+        if (!passwordEncoder.matches(loginRequest.getPassword(), userdb.getPasswordHash())) {
+            throw new RuntimeException("Invalid Password!");
+        }
 
-	@Override
-	public AuthResponse refreshToken(String email) {
-		User userdb = userRepository.findByEmail(email)
-				.orElseThrow(() -> new RuntimeException("User not found!"));
+        if (!userdb.isActive()) {
+            throw new RuntimeException("Account is not verified. Please verify your email using the OTP sent during registration.");
+        }
 
-		if (!userdb.isActive()) {
-			throw new UnauthorizedException("Your account has been deactivated. Please contact support.");
-		}
+        validateAndUpdateSubscription(userdb);
+        return buildAuthResponse(userdb, "Login Success");
+    }
 
-		String token = jwtService.generateToken(userdb);
-		return new AuthResponse(token, "Token refreshed successfully");
-	}
+    @Override
+    public AuthResponse refreshToken(String email) {
+        User userdb = userRepository.findByEmail(normalizeEmail(email))
+                .orElseThrow(() -> new RuntimeException("User not found!"));
 
-	/*
-	 * First We validate email- that exit in our database or not If email exist in
-	 * our database then I will send 6-digit verification code to email otherwise
-	 * stop
-	 */
-	@Override
-	public String initiateForgetPassword(String email) {
-		User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
+        if (!userdb.isActive()) {
+            throw new UnauthorizedException("Your account has been deactivated. Please contact support.");
+        }
 
-		// 1. Generate 6-digit code
-		String otp = generateOtp();
+        validateAndUpdateSubscription(userdb);
+        return buildAuthResponse(userdb, "Token refreshed successfully");
+    }
 
-		// 2. Save OTP and Expiry (e.g., 5 minutes from now) to DB
-		user.setOtpCode(otp);
-		user.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
-		userRepository.save(user);
+    @Override
+    public String initiateForgetPassword(String email) {
+        User user = userRepository.findByEmail(normalizeEmail(email))
+                .orElseThrow(() -> new RuntimeException("User not found!"));
 
-		// 3. Publish email event asynchronously via RabbitMQ (non-blocking)
-		EmailEvent event = EmailEvent.builder()
-				.to(email)
-				.otp(otp)
-				.subject("Forgot Password OTP")
-				.purpose("FORGOT_PASSWORD")
-				.build();
-		emailEventProducer.publishEmailEvent(event);
-		log.info("[AUTH] Forgot-password OTP event published for email={}", email);
+        String otp = generateOtp();
+        user.setOtpCode(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
+        userRepository.save(user);
 
-		return "Verification code sent to your email.";
-	}
+        EmailEvent event = EmailEvent.builder()
+                .to(email)
+                .otp(otp)
+                .subject("Forgot Password OTP")
+                .purpose("FORGOT_PASSWORD")
+                .build();
+        emailEventProducer.publishEmailEvent(event);
+        log.info("[AUTH] Forgot-password OTP event published for email={}", email);
 
-	/*
-	 * Once user get OTP then we verify that in our DB -
-	 */
-	@Override
-	public String verifyOtp(String email, String otp) {
-		User userdb = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
+        return "Verification code sent to your email.";
+    }
 
-		/*
-		 * Here First we validate the OTP with our DB
-		 */
-		if (userdb.getOtpCode() == null || !userdb.getOtpCode().equals(otp)) {
-			throw new RuntimeException("OTP Invalid! please try again.");
-		}
+    @Override
+    public String verifyOtp(String email, String otp) {
+        User userdb = userRepository.findByEmail(normalizeEmail(email))
+                .orElseThrow(() -> new RuntimeException("User not found!"));
 
-		/*
-		 * here - Validatation of OTP is expire or not
-		 */
-		if (userdb.getOtpCode() == null || !userdb.getOtpExpiry().isAfter(LocalDateTime.now())) {
-			throw new RuntimeException("OTP Expired! please try again.");
-		}
-		return "OTP Verified. You may now reset your password.";
-	}
+        if (userdb.getOtpCode() == null || !userdb.getOtpCode().equals(normalizeOtp(otp))) {
+            throw new RuntimeException("OTP Invalid! please try again.");
+        }
 
-	/*
-	 * Finally we update the password
-	 */
-	@Override
-	public String resetPassword(String email, String newPassword) {
-		User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
+        if (userdb.getOtpExpiry() == null || !userdb.getOtpExpiry().isAfter(LocalDateTime.now())) {
+            throw new RuntimeException("OTP Expired! please try again.");
+        }
+        return "OTP Verified. You may now reset your password.";
+    }
 
-		// Ensure you encode the password before saving!
-		user.setPasswordHash(passwordEncoder.encode(newPassword));
-		user.setOtpCode(null); // Clear OTP after use
-		userRepository.save(user);
+    @Override
+    public String resetPassword(String email, String newPassword) {
+        User user = userRepository.findByEmail(normalizeEmail(email))
+                .orElseThrow(() -> new RuntimeException("User not found!"));
 
-		return "Password updated successfully.";
-	}
-	
-	/*
-	 * This function will generate OTP
-	 */
-	private String generateOtp() {
-	    int otp = 100000 + random.nextInt(900000);
-	    return String.valueOf(otp);
-	}
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setOtpCode(null);
+        userRepository.save(user);
 
-	private String normalizeEmail(String email) {
-		return email == null ? null : email.trim().toLowerCase();
-	}
+        return "Password updated successfully.";
+    }
 
-	private String normalizeOtp(String otp) {
-		return otp == null ? "" : otp.trim();
-	}
+    @Override
+    @Transactional
+    public AuthResponse updateSubscription(SubscriptionUpdateRequest request) {
+        if (request == null || request.getUserId() == null) {
+            throw new BadRequestException("User ID is required to update subscription.");
+        }
 
-	@Override
-	public void updateSubscription(String email, String plan) {
-		User userdb = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
-		userdb.setSubscriptionPlan(plan);
-		userRepository.save(userdb);
-	}
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found!"));
 
-	@Override
-	@Transactional
-	public AuthResponse updateProfile(String email, UpdateProfileRequest updateUser) {
+        String normalizedPlan = normalizePlan(request.getPlanType());
+        if (request.getPaymentId() != null
+                && request.getPaymentId().equals(user.getLastPaymentId())
+                && normalizedPlan.equalsIgnoreCase(user.getSubscriptionPlan())
+                && Boolean.TRUE.equals(user.getPremiumActive())) {
+            validateAndUpdateSubscription(user);
+            return buildAuthResponse(user, "Subscription already active.");
+        }
 
-		User userdb = userRepository.findByEmail(email)
-				.orElseThrow(() -> new RuntimeException("User not found!"));
+        LocalDateTime now = LocalDateTime.now();
 
-		boolean isEmailChanging = !userdb.getEmail().equalsIgnoreCase(updateUser.getEmail());
+        user.setSubscriptionPlan(normalizedPlan);
+        user.setPremiumActive(!"FREE".equals(normalizedPlan));
+        user.setSubscriptionStatus("FREE".equals(normalizedPlan) ? "FREE" : "ACTIVE");
+        user.setSubscriptionStartDate("FREE".equals(normalizedPlan) ? null : now);
+        user.setSubscriptionEndDate(resolveSubscriptionEndDate(normalizedPlan, now));
+        user.setPaymentStatus(request.getPaymentStatus() == null ? "COMPLETED" : request.getPaymentStatus().toUpperCase());
+        user.setLastPaymentId(request.getPaymentId());
 
-		// Update basic fields
-		userdb.setFullName(updateUser.getFullName());
-		userdb.setPhone(updateUser.getPhone());
+        validateAndUpdateSubscription(user);
+        userRepository.save(user);
+        return buildAuthResponse(user, "Subscription updated to " + normalizedPlan);
+    }
 
-		if (isEmailChanging) {
+    @Override
+    @Transactional
+    public AuthResponse updateProfile(String email, UpdateProfileRequest updateUser) {
+        User userdb = userRepository.findByEmail(normalizeEmail(email))
+                .orElseThrow(() -> new RuntimeException("User not found!"));
 
-			// Check if new email already exists
-			if (userRepository.findByEmail(updateUser.getEmail()).isPresent()) {
-				throw new RuntimeException("Email already in use by another account!");
-			}
+        boolean isEmailChanging = !userdb.getEmail().equalsIgnoreCase(updateUser.getEmail());
 
-			// Store pending email (DO NOT replace original yet)
-			userdb.setPendingEmail(updateUser.getEmail());
+        userdb.setFullName(updateUser.getFullName());
+        userdb.setPhone(updateUser.getPhone());
+        validateAndUpdateSubscription(userdb);
 
-			// Generate OTP
-			String otp = generateOtp();
-			userdb.setOtpCode(otp);
-			userdb.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
+        if (isEmailChanging) {
+            if (userRepository.findByEmail(normalizeEmail(updateUser.getEmail())).isPresent()) {
+                throw new RuntimeException("Email already in use by another account!");
+            }
 
-			// Send OTP via RabbitMQ
-			EmailEvent event = EmailEvent.builder()
-					.to(updateUser.getEmail())
-					.otp(otp)
-					.subject("Email Update Verification")
-					.purpose("UPDATE_EMAIL")
-					.build();
+            userdb.setPendingEmail(normalizeEmail(updateUser.getEmail()));
 
-			emailEventProducer.publishEmailEvent(event);
-			log.info("[AUTH] Email-update OTP event published for pendingEmail={}", updateUser.getEmail());
+            String otp = generateOtp();
+            userdb.setOtpCode(otp);
+            userdb.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
 
-			// IMPORTANT: deactivate account until verification
-			userdb.setActive(false);
-		}
+            EmailEvent event = EmailEvent.builder()
+                    .to(updateUser.getEmail())
+                    .otp(otp)
+                    .subject("Email Update Verification")
+                    .purpose("UPDATE_EMAIL")
+                    .build();
 
-		// Save user
-		userRepository.save(userdb);
+            emailEventProducer.publishEmailEvent(event);
+            log.info("[AUTH] Email-update OTP event published for pendingEmail={}", updateUser.getEmail());
+            userdb.setActive(false);
+        }
 
-		// ALWAYS generate NEW TOKEN (even if email not changed)
-		String newToken = jwtService.generateToken(userdb);
+        userRepository.save(userdb);
 
-		// Response message handling
-		String message = isEmailChanging
-				? "Email changed. Please verify your new email. You will be logged out."
-				: "Profile updated successfully";
+        String message = isEmailChanging
+                ? "Email changed. Please verify your new email. You will be logged out."
+                : "Profile updated successfully";
 
-		return new AuthResponse(newToken, message);
-	}
+        return buildAuthResponse(userdb, message);
+    }
 
-	@Override
-	@Transactional
-	public AuthResponse verifyEmailUpdate(String currentEmail, String otp) {
+    @Override
+    @Transactional
+    public AuthResponse verifyEmailUpdate(String currentEmail, String otp) {
+        User user = userRepository.findByEmail(normalizeEmail(currentEmail))
+                .orElseThrow(() -> new RuntimeException("User not found!"));
 
-		User user = userRepository.findByEmail(currentEmail)
-				.orElseThrow(() -> new RuntimeException("User not found!"));
+        if (user.getOtpCode() == null || !user.getOtpCode().equals(normalizeOtp(otp))) {
+            throw new RuntimeException("Invalid OTP!");
+        }
 
-		// Validate OTP
-		if (user.getOtpCode() == null || !user.getOtpCode().equals(otp)) {
-			throw new RuntimeException("Invalid OTP!");
-		}
+        if (user.getOtpExpiry() == null || user.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("OTP expired!");
+        }
 
-		if (user.getOtpExpiry() == null || user.getOtpExpiry().isBefore(LocalDateTime.now())) {
-			throw new RuntimeException("OTP expired!");
-		}
+        user.setEmail(user.getPendingEmail());
+        user.setPendingEmail(null);
+        user.setOtpCode(null);
+        user.setOtpExpiry(null);
+        user.setActive(true);
+        validateAndUpdateSubscription(user);
+        userRepository.save(user);
 
-		// Apply email change
-		user.setEmail(user.getPendingEmail());
-		user.setPendingEmail(null);
+        return buildAuthResponse(user, "Email verified successfully. You can continue.");
+    }
 
-		// Clear OTP
-		user.setOtpCode(null);
-		user.setOtpExpiry(null);
+    @Override
+    public UserResponseDTO getUserByEmail(String email) {
+        User userdb = userRepository.findByEmail(normalizeEmail(email))
+                .orElseThrow(() -> new RuntimeException("User not found!"));
+        validateAndUpdateSubscription(userdb);
+        return mapUserResponse(userdb);
+    }
 
-		// Reactivate account
-		user.setActive(true);
+    @Override
+    public UserResponseDTO getUserById(Long id) {
+        User userdb = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found!"));
+        validateAndUpdateSubscription(userdb);
+        return mapUserResponse(userdb);
+    }
 
-		userRepository.save(user);
+    @Override
+    public CurrentUserResponseDTO getCurrentUser(String email) {
+        User userdb = userRepository.findByEmail(normalizeEmail(email))
+                .orElseThrow(() -> new RuntimeException("User not found!"));
 
-		// Generate NEW TOKEN with UPDATED EMAIL
-		String newToken = jwtService.generateToken(user);
+        if (!userdb.isActive()) {
+            throw new UnauthorizedException("Your account has been deactivated. Please contact support.");
+        }
 
-		return new AuthResponse(newToken, "Email verified successfully. You can continue.");
-	}
+        validateAndUpdateSubscription(userdb);
+        return mapCurrentUser(userdb);
+    }
 
-	@Override
-	public UserResponseDTO getUserByEmail(String email) {
-		User userdb = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found!"));
-		return new UserResponseDTO(userdb.getFullName(), userdb.getEmail(), userdb.getPhone(), userdb.getRole(), userdb.isActive(), userdb.getSubscriptionPlan());
-	}
+    @Scheduled(cron = "0 0 * * * *")
+    @Transactional
+    public void expireSubscriptions() {
+        List<User> expiredUsers = userRepository.findByPremiumActiveTrueAndSubscriptionEndDateBefore(LocalDateTime.now());
+        if (expiredUsers.isEmpty()) {
+            return;
+        }
 
-	@Override
-	public UserResponseDTO getUserById(Long id) {
-		User userdb = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found!"));
-		return new UserResponseDTO(userdb.getFullName(), userdb.getEmail(), userdb.getPhone(), userdb.getRole(), userdb.isActive(), userdb.getSubscriptionPlan());
-	}
+        expiredUsers.forEach(this::downgradeExpiredSubscription);
+        userRepository.saveAll(expiredUsers);
+        log.info("Expired {} subscription(s) during scheduled validation.", expiredUsers.size());
+    }
 
-	@Override
-	public CurrentUserResponseDTO getCurrentUser(String email) {
-		User userdb = userRepository.findByEmail(email)
-				.orElseThrow(() -> new RuntimeException("User not found!"));
+    private String generateOtp() {
+        int otp = 100000 + random.nextInt(900000);
+        return String.valueOf(otp);
+    }
 
-		if (!userdb.isActive()) {
-			throw new UnauthorizedException("Your account has been deactivated. Please contact support.");
-		}
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase();
+    }
 
-		return new CurrentUserResponseDTO(
-				userdb.getId(),
-				userdb.getFullName(),
-				userdb.getEmail(),
-				userdb.getPhone(),
-				userdb.getRole(),
-				userdb.isActive(),
-				userdb.getSubscriptionPlan());
-	}
+    private String normalizeOtp(String otp) {
+        return otp == null ? "" : otp.trim();
+    }
+
+    private String normalizePlan(String plan) {
+        String normalized = plan == null ? "FREE" : plan.trim().toUpperCase();
+        return switch (normalized) {
+            case "PRO" -> "MONTHLY";
+            case "MONTHLY", "YEARLY", "FREE" -> normalized;
+            default -> throw new BadRequestException("Unsupported subscription plan: " + plan);
+        };
+    }
+
+    private LocalDateTime resolveSubscriptionEndDate(String planType, LocalDateTime startDate) {
+        return switch (planType) {
+            case "MONTHLY" -> startDate.plusMonths(1);
+            case "YEARLY" -> startDate.plusYears(1);
+            default -> null;
+        };
+    }
+
+    private void ensureFreeDefaults(User user) {
+        if (user.getSubscriptionPlan() == null) {
+            user.setSubscriptionPlan("FREE");
+        }
+        if (user.getPremiumActive() == null) {
+            user.setPremiumActive(false);
+        }
+        if (user.getSubscriptionStatus() == null) {
+            user.setSubscriptionStatus("FREE");
+        }
+        if (user.getPaymentStatus() == null) {
+            user.setPaymentStatus("UNPAID");
+        }
+    }
+
+    private void validateAndUpdateSubscription(User user) {
+        ensureFreeDefaults(user);
+
+        if (!Boolean.TRUE.equals(user.getPremiumActive())) {
+            if (!"FREE".equalsIgnoreCase(user.getSubscriptionPlan())) {
+                user.setSubscriptionPlan("FREE");
+            }
+            if (!"EXPIRED".equalsIgnoreCase(user.getSubscriptionStatus())) {
+                user.setSubscriptionStatus("FREE");
+            }
+            return;
+        }
+
+        LocalDateTime endDate = user.getSubscriptionEndDate();
+        if (endDate == null || LocalDateTime.now().isAfter(endDate)) {
+            downgradeExpiredSubscription(user);
+        } else {
+            user.setSubscriptionStatus("ACTIVE");
+        }
+    }
+
+    private void downgradeExpiredSubscription(User user) {
+        user.setSubscriptionPlan("FREE");
+        user.setPremiumActive(false);
+        user.setSubscriptionStatus("EXPIRED");
+        user.setPaymentStatus("EXPIRED");
+        user.setSubscriptionStartDate(null);
+        user.setSubscriptionEndDate(null);
+    }
+
+    private AuthResponse buildAuthResponse(User user, String message) {
+        String token = jwtService.generateToken(user);
+        return new AuthResponse(token, message, mapCurrentUser(user));
+    }
+
+    private CurrentUserResponseDTO mapCurrentUser(User user) {
+        return new CurrentUserResponseDTO(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getRole(),
+                user.isActive(),
+                user.getSubscriptionPlan(),
+                Boolean.TRUE.equals(user.getPremiumActive()),
+                user.getSubscriptionStatus(),
+                user.getPaymentStatus(),
+                user.getLastPaymentId(),
+                formatDate(user.getSubscriptionStartDate()),
+                formatDate(user.getSubscriptionEndDate())
+        );
+    }
+
+    private UserResponseDTO mapUserResponse(User user) {
+        return new UserResponseDTO(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getRole(),
+                user.isActive(),
+                user.getSubscriptionPlan(),
+                Boolean.TRUE.equals(user.getPremiumActive()),
+                user.getSubscriptionStatus(),
+                user.getPaymentStatus(),
+                user.getLastPaymentId(),
+                formatDate(user.getSubscriptionStartDate()),
+                formatDate(user.getSubscriptionEndDate())
+        );
+    }
+
+    private String formatDate(LocalDateTime value) {
+        return value == null ? null : value.format(DATE_FORMATTER);
+    }
 }

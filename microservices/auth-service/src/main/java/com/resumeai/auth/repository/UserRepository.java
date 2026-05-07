@@ -1,5 +1,6 @@
 package com.resumeai.auth.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findBySubscriptionPlan(String plan);
 
     List<User> findByIsActive(boolean active);
+
+    List<User> findByPremiumActiveTrueAndSubscriptionEndDateBefore(LocalDateTime currentDateTime);
 
     void deleteById(Long userId);
 }

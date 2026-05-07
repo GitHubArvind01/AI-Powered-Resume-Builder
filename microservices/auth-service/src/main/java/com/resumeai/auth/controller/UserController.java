@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.resumeai.auth.dtos.LoginRequest;
 import com.resumeai.auth.dtos.RegisterRequest;
+import com.resumeai.auth.dtos.SubscriptionUpdateRequest;
 import com.resumeai.auth.dtos.UpdateProfileRequest;
 import com.resumeai.auth.dtos.UserResponseDTO;
 import com.resumeai.auth.dtos.AuthResponse;
@@ -189,9 +190,8 @@ public class UserController {
 
     @PostMapping("/update-subscription")
     @Operation(summary = "9. Update Subscription")
-    public ResponseEntity<String> updateSubscription(@RequestParam String email, @RequestParam String plan) {
-        userService.updateSubscription(email, plan);
-        return ResponseEntity.ok("Subscription updated to " + plan);
+    public ResponseEntity<AuthResponse> updateSubscription(@RequestBody SubscriptionUpdateRequest request) {
+        return ResponseEntity.ok(userService.updateSubscription(request));
     }
 
     @PostMapping("/refresh-token")

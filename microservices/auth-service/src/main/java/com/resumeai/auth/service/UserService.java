@@ -4,6 +4,7 @@ import com.resumeai.auth.dtos.AuthResponse;
 import com.resumeai.auth.dtos.CurrentUserResponseDTO;
 import com.resumeai.auth.dtos.LoginRequest;
 import com.resumeai.auth.dtos.RegisterRequest;
+import com.resumeai.auth.dtos.SubscriptionUpdateRequest;
 import com.resumeai.auth.dtos.UpdateProfileRequest;
 import com.resumeai.auth.dtos.UserResponseDTO;
 
@@ -35,7 +36,7 @@ public interface UserService {
     /*
      * Update User
      */
-    void updateSubscription(String email, String plan);
+    AuthResponse updateSubscription(SubscriptionUpdateRequest request);
 
     AuthResponse updateProfile(String email, UpdateProfileRequest updateUser);
     

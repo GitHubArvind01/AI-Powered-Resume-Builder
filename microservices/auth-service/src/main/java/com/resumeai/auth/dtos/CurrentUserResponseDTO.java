@@ -15,4 +15,10 @@ public class CurrentUserResponseDTO {
     private String role;
     private boolean active;
     private String subscriptionPlan;
+    private Boolean premiumActive;
+    private String subscriptionStatus;
+    private String paymentStatus;
+    private String lastPaymentId;
+    private String subscriptionStartDate;
+    private String subscriptionEndDate;
 }

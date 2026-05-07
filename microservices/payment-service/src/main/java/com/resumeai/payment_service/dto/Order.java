@@ -30,4 +30,7 @@ public class Order {
     @NotBlank(message = "Description cannot be blank")
     @Size(min = 3, max = 500, message = "Description must be between 3 and 500 characters")
     private String description;
+
+    @NotBlank(message = "Plan type cannot be blank")
+    private String planType;
 }

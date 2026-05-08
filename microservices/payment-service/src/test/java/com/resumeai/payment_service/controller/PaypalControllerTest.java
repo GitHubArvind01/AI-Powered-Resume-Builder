@@ -87,7 +87,8 @@ class PaypalControllerTest {
                 anyString(),
                 anyString(),
                 anyString(),
-                eq(testUserId)
+                eq(testUserId),
+                anyString()
         )).thenReturn(mockPayment);
 
         // Act & Assert
@@ -140,7 +141,8 @@ class PaypalControllerTest {
                 anyString(),
                 anyString(),
                 anyString(),
-                eq(testUserId)
+                eq(testUserId),
+                anyString()
         )).thenThrow(new PayPalRESTException("Invalid API signature"));
 
         // Act & Assert
@@ -208,7 +210,7 @@ class PaypalControllerTest {
         when(paypalService.getPaymentHistoryByStatus(testUserId, "COMPLETED"))
                 .thenReturn(Arrays.asList(payment));
 
-        // Act & Assert
+        // Act & Asserts
         mockMvc.perform(get("/api/v1/payments/history/COMPLETED")
                 .header("X-User-Id", testUserId))
                 .andExpect(status().isOk())

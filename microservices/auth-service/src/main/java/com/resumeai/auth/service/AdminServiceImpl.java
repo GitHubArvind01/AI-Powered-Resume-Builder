@@ -21,7 +21,7 @@ import com.resumeai.auth.exception.ForbiddenException;
 import com.resumeai.auth.exception.ResourceNotFoundException;
 import com.resumeai.auth.messaging.EmailEventProducer;
 import com.resumeai.auth.repository.UserRepository;
-
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -93,22 +93,92 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional
     public AdminUserDetailsDTO updateUser(Long id, AdminUpdateUserRequest request) {
+
         assertAdminAccess();
+
         User user = getExistingUser(id);
 
         String normalizedEmail = request.getEmail().trim().toLowerCase();
-        if (!user.getEmail().equalsIgnoreCase(normalizedEmail) && userRepository.existsByEmail(normalizedEmail)) {
-            throw new BadRequestException("Email already exists for another user.");
+
+        if (!user.getEmail().equalsIgnoreCase(normalizedEmail)
+                && userRepository.existsByEmail(normalizedEmail)) {
+
+            throw new BadRequestException(
+                    "Email already exists for another user."
+            );
         }
 
+        // ========================
+        // BASIC INFO
+        // ========================
+
         user.setFullName(request.getFullName().trim());
+
         user.setEmail(normalizedEmail);
+
         user.setPhone(request.getPhone());
+
         user.setRole(request.getRole().trim().toUpperCase());
-        user.setSubscriptionPlan(request.getSubscriptionPlan().trim().toUpperCase());
+
         user.setActive(Boolean.TRUE.equals(request.getActive()));
 
-        return buildDetails(userRepository.save(user));
+        // ========================
+        // PLAN MANAGEMENT
+        // ========================
+
+        String plan = request.getSubscriptionPlan()
+                .trim()
+                .toUpperCase();
+
+        user.setSubscriptionPlan(plan);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        switch (plan) {
+
+            case "MONTHLY" -> {
+
+                user.setPremiumActive(true);
+
+                user.setSubscriptionStatus("ACTIVE");
+
+                user.setPaymentStatus("COMPLETED");
+
+                user.setSubscriptionStartDate(now);
+
+                user.setSubscriptionEndDate(now.plusDays(30));
+            }
+
+            case "YEARLY" -> {
+
+                user.setPremiumActive(true);
+
+                user.setSubscriptionStatus("ACTIVE");
+
+                user.setPaymentStatus("COMPLETED");
+
+                user.setSubscriptionStartDate(now);
+
+                user.setSubscriptionEndDate(now.plusDays(365));
+            }
+
+            default -> {
+
+                user.setPremiumActive(false);
+
+                user.setSubscriptionStatus("INACTIVE");
+
+                user.setPaymentStatus(null);
+
+                user.setSubscriptionStartDate(null);
+
+                user.setSubscriptionEndDate(null);
+            }
+        }
+
+        User savedUser = userRepository.save(user);
+
+        return buildDetails(savedUser);
     }
 
     @Override
@@ -187,7 +257,12 @@ public class AdminServiceImpl implements AdminService {
                 user.isActive(),
                 user.getCreatedAt(),
                 resumes.size(),
-                resumes
+                resumes,
+                user.getPremiumActive(),
+                user.getSubscriptionStatus(),
+                user.getSubscriptionStartDate(),
+                user.getSubscriptionEndDate(),
+                user.getPaymentStatus()
         );
     }
 

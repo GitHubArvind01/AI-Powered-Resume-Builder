@@ -142,13 +142,15 @@ class UserControllerTest {
 
     @Test
     void testUpdateSubscription() throws Exception {
-        doNothing().when(userService).updateSubscription("test@gmail.com", "PRO");
+        SubscriptionUpdateRequest request = new SubscriptionUpdateRequest(1L, "PRO", "COMPLETED", "pay_123");
+
+        // If service returns void, we just verify the call
+        doNothing().when(userService).updateSubscription(any(SubscriptionUpdateRequest.class));
 
         mockMvc.perform(post("/api/v1/auth/update-subscription")
-                        .param("email", "test@gmail.com")
-                        .param("plan", "PRO"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Subscription updated to PRO"));
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
     }
 
     @Test

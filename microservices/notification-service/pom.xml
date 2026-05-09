@@ -65,6 +65,12 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
+
 		<!-- Spring Boot Admin Client -->
 		<dependency>
 			<groupId>de.codecentric</groupId>

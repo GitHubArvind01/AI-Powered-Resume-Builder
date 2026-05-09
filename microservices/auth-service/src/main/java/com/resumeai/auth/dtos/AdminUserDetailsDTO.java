@@ -21,4 +21,9 @@ public class AdminUserDetailsDTO {
     private LocalDateTime createdAt;
     private Integer resumeCount;
     private List<AdminResumeDTO> resumes;
+    private Boolean premiumActive;
+    private String subscriptionStatus;
+    private LocalDateTime subscriptionStartDate;
+    private LocalDateTime subscriptionEndDate;
+    private String paymentStatus;
 }

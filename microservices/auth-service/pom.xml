@@ -83,6 +83,12 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 
+		<!-- Spring Boot Starter AOP -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
+
 		<!-- Spring Boot Starter Web (includes Spring MVC, Tomcat, Jackson) -->
 		<!-- ✅ FIXED: Changed from spring-boot-starter-webmvc to
 		spring-boot-starter-web -->

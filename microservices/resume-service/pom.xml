@@ -99,6 +99,12 @@
 		<version>2.3.0</version>
 	</dependency>
 
+
+	<dependency>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-aop</artifactId>
+	</dependency>
+
 	<!-- Spring Boot DevTools for development-time features -->
 	<dependency>
 		<groupId>org.springframework.boot</groupId>

@@ -46,7 +46,7 @@ class PaypalServiceTest {
     private String testCurrency;
     private String testPaymentId;
     private String testPayerId;
-
+    private String planType;
     @BeforeEach
     void setUp() {
         testUserId = 1L;
@@ -54,6 +54,7 @@ class PaypalServiceTest {
         testCurrency = "USD";
         testPaymentId = "PAYID-1234567890";
         testPayerId = "PAYERID-1234567890";
+        planType = "MONTHLY";
     }
 
     // ==================== Payment Creation Tests ====================
@@ -94,7 +95,8 @@ class PaypalServiceTest {
                 description,
                 cancelUrl,
                 successUrl,
-                testUserId
+                testUserId,
+                planType
         );
 
         // Assert
@@ -127,7 +129,8 @@ class PaypalServiceTest {
                         description,
                         cancelUrl,
                         successUrl,
-                        testUserId
+                        testUserId,
+                        planType
                 )
         );
     }

@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="6bf0c68c-d5f5-4c54-9f6e-155c5e379fbb" name="Changes" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_C:/Users/kumar/OneDrive/Desktop/AI-Powered-Resume-Builder/AI-Powered-Resume-Builder-Backend" value="3DR45qVECdvNLv0liHbqs5aygG7" />
+      <entry key="_C:/Users/kumar/OneDrive/Desktop/AI-Powered-Resume-Builder/AI-Powered-Resume-Builder-Backend/api-gateway" value="3DTnhbfk1JVAzyDTAfb7lTkmQtP" />
+      <entry key="_C:/Users/kumar/OneDrive/Desktop/AI-Powered-Resume-Builder/AI-Powered-Resume-Builder-Backend/eureka-server" value="3DTREIUPfoyPg5nBMxeGPzuUcEr" />
+    </persistenceIdMap>
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 6
+}</component>
+  <component name="ProjectId" id="3DR45qVECdvNLv0liHbqs5aygG7" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "Spring Boot.AdminServerApplication.executor": "Run",
+    "Spring Boot.AiServiceApplication.executor": "Run",
+    "Spring Boot.ApiGatewayApplication.executor": "Run",
+    "Spring Boot.AuthApplication.executor": "Run",
+    "Spring Boot.EurekaApplication.executor": "Run",
+    "Spring Boot.ExportServiceApplication.executor": "Run",
+    "Spring Boot.NotificationServiceApplication.executor": "Run",
+    "Spring Boot.PaymentServiceApplication.executor": "Run",
+    "Spring Boot.ResumeServiceApplication.executor": "Run",
+    "Spring Boot.TemplateServiceApplication.executor": "Run",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "feature/UC999-UpStream-Stage-Persentation",
+    "junie.onboarding.icon.badge.shown": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/kumar/OneDrive/Desktop/AI-Powered-Resume-Builder/AI-Powered-Resume-Builder-Backend",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "run.configurations.included.in.services": "true",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="ReactorSettings">
+    <option name="notificationShown" value="true" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\kumar\OneDrive\Desktop\AI-Powered-Resume-Builder\AI-Powered-Resume-Builder-Backend\microservices\template-service\src\main\java\com\resumeai\template_service" />
+      <recent name="C:\Users\kumar\OneDrive\Desktop\AI-Powered-Resume-Builder\AI-Powered-Resume-Builder-Backend\microservices\resume-service\src\main\java\com\resumeai\resume_service" />
+      <recent name="C:\Users\kumar\OneDrive\Desktop\AI-Powered-Resume-Builder\AI-Powered-Resume-Builder-Backend\microservices\payment-service\src\main\java\com\resumeai\payment_service" />
+      <recent name="C:\Users\kumar\OneDrive\Desktop\AI-Powered-Resume-Builder\AI-Powered-Resume-Builder-Backend\microservices\notification-service\src\main\java\com\resumeai\notification_service" />
+      <recent name="C:\Users\kumar\OneDrive\Desktop\AI-Powered-Resume-Builder\AI-Powered-Resume-Builder-Backend\microservices\export-service\src\main\java\com\resumeai\export_service" />
+    </key>
+  </component>
+  <component name="RunDashboard">
+    <option name="configurationTypes">
+      <set>
+        <option value="KtorApplicationConfigurationType" />
+        <option value="MicronautRunConfigurationType" />
+        <option value="QuarkusRunConfigurationType" />
+        <option value="SpringBootApplicationConfigurationType" />
+      </set>
+    </option>
+    <option name="configurationStatuses">
+      <map>
+        <entry key="SpringBootApplicationConfigurationType">
+          <value>
+            <map>
+              <entry key="AdminServerApplication" value="STOPPED" />
+              <entry key="AiServiceApplication" value="STOPPED" />
+              <entry key="ApiGatewayApplication" value="STOPPED" />
+              <entry key="AuthApplication" value="STOPPED" />
+              <entry key="EurekaApplication" value="STOPPED" />
+              <entry key="ExportServiceApplication" value="STOPPED" />
+              <entry key="NotificationServiceApplication" value="STOPPED" />
+              <entry key="PaymentServiceApplication" value="STOPPED" />
+              <entry key="ResumeServiceApplication" value="STOPPED" />
+              <entry key="TemplateServiceApplication" value="STOPPED" />
+            </map>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="RunManager" selected="Spring Boot.ResumeServiceApplication">
+    <configuration default="true" type="JetRunConfigurationType">
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="DEBUG_JUST_MY_CODE" value="false" />
+      <module name="" />
+      <option name="RUN_TOOL" value="" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="AdminServerApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <envs>
+        <env name="EUREKA_URL" value="http://localhost:8761/eureka" />
+        <env name="PORT" value="9090" />
+      </envs>
+      <module name="admin-server" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.resumeai.admin_server.AdminServerApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AiServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <envs>
+        <env name="ADMIN_SERVER_URL" value="http://localhost:9090" />
+        <env name="DB_PASSWORD" value="resumeai" />
+        <env name="DB_USERNAME" value="resumeai" />
+        <env name="EUREKA_URL" value="http://localhost:8761/eureka" />
+        <env name="GEMINI_API_KEY" value="AIzaSyCTiHE4FvVaqG7rcYwOS2sxiMLdCEf8ZEw" />
+        <env name="PORT" value="8084" />
+      </envs>
+      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+      <module name="ai-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.resumeai.aiservice.AiServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ApiGatewayApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <envs>
+        <env name="ADMIN_SERVER_URL" value="http://localhost:9090" />
+        <env name="EUREKA_URL" value="http://localhost:8761/eureka" />
+        <env name="JWT_SECRET" value="7e5ee65f8b5217459960fca50d92744a3e3167addbb4bc59aba3c70cd9d2baca" />
+        <env name="PORT" value="8080" />
+      </envs>
+      <module name="api-gateway" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.resumeai.api_gateway.ApiGatewayApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AuthApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <envs>
+        <env name="ADMIN_SERVER_URL" value="http://localhost:9090" />
+        <env name="DB_PASSWORD" value="resumeai" />
+        <env name="DB_USERNAME" value="resumeai" />
+        <env name="EUREKA_URL" value="http://localhost:8761/eureka" />
+        <env name="GOOGLE_CLIENT_ID" value="880694243289-hmeu169t5g1etinlqr8td1cv9crfb0gq.apps.googleusercontent.com" />
+        <env name="GOOGLE_CLIENT_SECRET" value="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" />
+        <env name="JWT_SECRET" value="7e5ee65f8b5217459960fca50d92744a3e3167addbb4bc59aba3c70cd9d2baca" />
+        <env name="MAIL_PASSWORD" value="dozv vear swsh nbwh" />
+        <env name="MAIL_USERNAME" value="scriptcustom244@gmail.com" />
+        <env name="PORT" value="8081" />
+        <env name="RABBITMQ_HOST" value="localhost" />
+        <env name="RABBITMQ_PASSWORD" value="guest" />
+        <env name="RABBITMQ_PORT" value="5672" />
+        <env name="RABBITMQ_USERNAME" value="guest" />
+        <env name="REDIRECT_URI" value="http://localhost:4200/auth" />
+      </envs>
+      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+      <module name="auth" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.resumeai.auth.AuthApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="EurekaApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="eureka" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.resumeai.eureka.EurekaApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ExportServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <envs>
+        <env name="ADMIN_SERVER_URL" value="http://localhost:9090" />
+        <env name="AWS_ACCESS_KEY" value="AKIAQ32DMDRRGGOMLOZ7" />
+        <env name="AWS_REGION" value="eu-north-1" />
+        <env name="AWS_SECRET_KEY" value="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" />
+        <env name="DB_PASSWORD" value="resumeai" />
+        <env name="DB_USERNAME" value="resumeai" />
+        <env name="EUREKA_URL" value="http://localhost:8761/eureka" />
+        <env name="PORT" value="8087" />
+        <env name="RABBITMQ_HOST" value="localhost" />
+        <env name="RABBITMQ_PASSWORD" value="guest" />
+        <env name="RABBITMQ_PORT" value="5672" />
+        <env name="RABBITMQ_USERNAME" value="guest" />
+        <env name="S3_BUCKET" value="resume-exports-arvind" />
+      </envs>
+      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+      <module name="export-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.resumeai.export_service.ExportServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="NotificationServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <envs>
+        <env name="ADMIN_SERVER_URL" value="http://localhost:9090" />
+        <env name="EUREKA_URL" value="http://localhost:8761/eureka" />
+        <env name="MAIL_PASSWORD" value="dozv vear swsh nbwh" />
+        <env name="MAIL_USERNAME" value="scriptcustom244@gmail.com" />
+        <env name="PORT" value="8088" />
+        <env name="RABBITMQ_HOST" value="localhost" />
+        <env name="RABBITMQ_PASSWORD" value="guest" />
+        <env name="RABBITMQ_PORT" value="5672" />
+        <env name="RABBITMQ_USERNAME" value="guest" />
+      </envs>
+      <module name="notification-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.resumeai.notification_service.NotificationServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="PaymentServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <envs>
+        <env name="ADMIN_SERVER_URL" value="http://localhost:9090" />
+        <env name="CLIENT_ID" value="AYwHGwgM0PfjkLP2PTVE5BpdNDsKWZs1jx2jurrU_tlmRSt152odV8j9Jk1ridnmTbGKu6pkSGK2D80E" />
+        <env name="CLIENT_SECRET" value="EHXDORP9SSifWvlv2In0k56m228M1wDIApYdiAKLWegQ2Tk_ueU0lUFwQ-ywoq65JshmOmXz8owIycE7" />
+        <env name="CLIENT_URL" value="http://localhost:4200" />
+        <env name="DB_PASSWORD" value="resumeai" />
+        <env name="DB_USERNAME" value="resumeai" />
+        <env name="EUREKA_URL" value="http://localhost:8761/eureka" />
+        <env name="GATEWAY_URL" value="http://localhost:8080" />
+        <env name="PORT" value="8086" />
+      </envs>
+      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+      <module name="payment-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.resumeai.payment_service.PaymentServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="ResumeServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <envs>
+        <env name="ADMIN_SERVER_URL" value="http://localhost:9090" />
+        <env name="DB_PASSWORD" value="resumeai" />
+        <env name="DB_USERNAME" value="resumeai" />
+        <env name="EUREKA_URL" value="http://localhost:8761/eureka" />
+        <env name="JWT_SECRET" value="7e5ee65f8b5217459960fca50d92744a3e3167addbb4bc59aba3c70cd9d2baca" />
+        <env name="PORT" value="8082" />
+      </envs>
+      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+      <module name="resume-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.resumeai.resume_service.ResumeServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="TemplateServiceApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <envs>
+        <env name="ADMIN_SERVER_URL" value="http://localhost:9090" />
+        <env name="DB_PASSWORD" value="resumeai" />
+        <env name="DB_USERNAME" value="resumeai" />
+        <env name="EUREKA_URL" value="http://localhost:8761/eureka" />
+        <env name="PORT" value="8085" />
+      </envs>
+      <option name="FRAME_DEACTIVATION_UPDATE_POLICY" value="UpdateClassesAndResources" />
+      <module name="template-service" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.resumeai.template_service.TemplateServiceApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="Tox" factoryName="Tox">
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="DEBUG_JUST_MY_CODE" value="false" />
+      <option name="RUN_TOOL" value="" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Spring Boot.AdminServerApplication" />
+      <item itemvalue="Spring Boot.AiServiceApplication" />
+      <item itemvalue="Spring Boot.ApiGatewayApplication" />
+      <item itemvalue="Spring Boot.AuthApplication" />
+      <item itemvalue="Spring Boot.EurekaApplication" />
+      <item itemvalue="Spring Boot.ExportServiceApplication" />
+      <item itemvalue="Spring Boot.NotificationServiceApplication" />
+      <item itemvalue="Spring Boot.PaymentServiceApplication" />
+      <item itemvalue="Spring Boot.ResumeServiceApplication" />
+      <item itemvalue="Spring Boot.TemplateServiceApplication" />
+    </list>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="6bf0c68c-d5f5-4c54-9f6e-155c5e379fbb" name="Changes" comment="" />
+      <created>1778231368087</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1778231368087</updated>
+      <workItem from="1778231369542" duration="1782000" />
+      <workItem from="1778266744009" duration="4369000" />
+      <workItem from="1778303961370" duration="6286000" />
+      <workItem from="1778315020304" duration="6243000" />
+      <workItem from="1778322235257" duration="1654000" />
+      <workItem from="1778492282042" duration="1200000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
+  </component>
+</project>

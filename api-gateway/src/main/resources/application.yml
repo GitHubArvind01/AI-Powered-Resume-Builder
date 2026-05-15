@@ -6,6 +6,9 @@ app:
     secret: ${JWT_SECRET}
     expiration-ms: 3600000
 
+  client:
+    url: ${CLIENT_URL:http://localhost:4200}
+
 spring:
   application:
     name: API-GATEWAY
@@ -108,7 +111,6 @@ management:
   endpoint:
     health:
       show-details: always
-
 # OPTIONAL
 eureka:
   client:

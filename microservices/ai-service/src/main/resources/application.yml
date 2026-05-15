@@ -6,10 +6,10 @@ spring:
     name: AI-SERVICE
 
   datasource:
-    url: jdbc:mysql://localhost:3306/ai_db
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/ai_db}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-    driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:

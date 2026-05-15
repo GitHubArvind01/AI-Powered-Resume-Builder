@@ -193,7 +193,7 @@ class UserServiceImpTest {
 
         AuthResponse response = userService.verifyEmailUpdate("test@gmail.com", "123456");
 
-        assertEquals("Email updated successfully to newemail@gmail.com", response.getMessage());
+        assertEquals("Email verified successfully. You can continue.", response.getMessage());
         assertEquals("newemail@gmail.com", mockUser.getEmail());
         assertNull(mockUser.getPendingEmail());
     }

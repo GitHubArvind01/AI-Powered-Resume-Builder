@@ -186,7 +186,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass>com.resumeai.resume.ResumeServiceApplication</mainClass>
+					<mainClass>com.resumeai.resume_service.ResumeServiceApplication</mainClass>
 				</configuration>
 			</plugin>
 

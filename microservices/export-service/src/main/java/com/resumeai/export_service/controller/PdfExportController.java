@@ -1,6 +1,7 @@
 package com.resumeai.export_service.controller;
 
 import com.resumeai.export_service.dto.PdfExportRequestDTO;
+import com.resumeai.export_service.dto.TemplateExportRequest;
 import com.resumeai.export_service.service.ResumePdfExportService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -30,6 +31,21 @@ public class PdfExportController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=resume-" + request.getResumeId() + ".pdf")
+                .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfBytes);
+    }
+
+    @PostMapping(value = "/template/pdf", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_PDF_VALUE)
+    @Operation(summary = "Export template resume as PDF", description = "Generate an ATS-friendly template PDF from the template editor payload.")
+    public ResponseEntity<byte[]> exportTemplatePdf(
+            @Valid @RequestBody TemplateExportRequest request,
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        byte[] pdfBytes = resumePdfExportService.exportTemplatePdf(request);
+        String safeName = request.getTemplateName().trim().toLowerCase().replaceAll("[^a-z0-9]+", "-");
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=resume-template-" + safeName + ".pdf")
                 .header(HttpHeaders.CACHE_CONTROL, "no-store, no-cache, must-revalidate, max-age=0")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);

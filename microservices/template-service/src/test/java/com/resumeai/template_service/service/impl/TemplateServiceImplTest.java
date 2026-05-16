@@ -1,4 +1,4 @@
-package com.resumeai.template_service.service.impl;
+package com.resumeai.template_service.service;
 
 import com.resumeai.template_service.dto.TemplateRequestDTO;
 import com.resumeai.template_service.dto.TemplateResponseDTO;
@@ -7,6 +7,7 @@ import com.resumeai.template_service.entity.TemplateCategory;
 import com.resumeai.template_service.exception.ResourceNotFoundException;
 import com.resumeai.template_service.mapper.TemplateMapper;
 import com.resumeai.template_service.repository.TemplateRepository;
+import com.resumeai.template_service.service.impl.TemplateServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

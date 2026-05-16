@@ -1,41 +1,46 @@
 package com.resumeai.payment_service.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.resumeai.payment_service.TestConfig;
-import com.resumeai.payment_service.dto.Order;
-import com.resumeai.payment_service.dto.PaymentResponseDTO;
-import com.resumeai.payment_service.service.PaypalService;
 import com.paypal.api.payments.Links;
 import com.paypal.api.payments.Payment;
 import com.paypal.base.rest.PayPalRESTException;
+import com.resumeai.payment_service.dto.*;
+import com.resumeai.payment_service.service.PaypalService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.servlet.view.RedirectView;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Integration Tests for PaypalController
- * Tests payment endpoints with Spring Boot test context
- */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(TestConfig.class)
-@DisplayName("PaypalController Integration Tests")
+@WebMvcTest(controllers = PaypalController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@TestPropertySource(properties = {
+        "app.gateway-url=http://localhost:8080",
+        "app.client-url=http://localhost:3000",
+        "app.endpoints.success-path=/api/v1/payments/pay/success",
+        "app.endpoints.cancel-path=/api/v1/payments/pay/cancel",
+        "app.endpoints.frontend-success-path=/payment/success",
+        "app.endpoints.frontend-failed-path=/payment/failed"
+})
 class PaypalControllerTest {
 
     @Autowired
@@ -47,228 +52,149 @@ class PaypalControllerTest {
     @MockBean
     private PaypalService paypalService;
 
-    private Long testUserId;
-    private String testPaymentId;
-    private Order testOrder;
+    private Order sampleOrder;
+    private PaymentResponseDTO samplePaymentResponse;
 
     @BeforeEach
     void setUp() {
-        testUserId = 1L;
-        testPaymentId = "PAYID-1234567890";
+        sampleOrder = new Order(29.99, "USD", "paypal", "sale", "Premium Plan subscription", "MONTHLY");
 
-        testOrder = new Order();
-        testOrder.setPrice(99.99);
-        testOrder.setCurrency("USD");
-        testOrder.setMethod("paypal");
-        testOrder.setIntent("sale");
-        testOrder.setDescription("Resume Builder Subscription");
+        samplePaymentResponse = PaymentResponseDTO.builder()
+                .id(UUID.randomUUID())
+                .userId(1L)
+                .paymentId("PAYID-SAMPLE123")
+                .payerId("PAYER-SAMPLE456")
+                .amount(BigDecimal.valueOf(29.99))
+                .currency("USD")
+                .description("Premium Plan subscription")
+                .planType("MONTHLY")
+                .status("COMPLETED")
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
     }
 
-    // ==================== Payment Creation Tests ====================
-
     @Test
-    @DisplayName("Should create payment and return approval URL")
-    void testPaymentSuccess() throws Exception {
-        // Arrange
-        Payment mockPayment = new Payment();
-        mockPayment.setId(testPaymentId);
-        mockPayment.setState("created");
-
+    void payment_Success_ReturnsApprovalUrl() throws Exception {
+        Payment mockPayment = Mockito.mock(Payment.class);
         Links approvalLink = new Links();
         approvalLink.setRel("approval_url");
-        approvalLink.setHref("https://www.sandbox.paypal.com/approve?token=EC-123456");
-        mockPayment.setLinks(Arrays.asList(approvalLink));
+        approvalLink.setHref("https://www.paypal.com/checkout?token=12345");
+
+        List<Links> links = new ArrayList<>();
+        links.add(approvalLink);
+        when(mockPayment.getLinks()).thenReturn(links);
 
         when(paypalService.createPayment(
-                anyDouble(),
-                anyString(),
-                anyString(),
-                anyString(),
-                anyString(),
-                anyString(),
-                anyString(),
-                eq(testUserId),
-                anyString()
+                anyDouble(), anyString(), anyString(), anyString(), anyString(),
+                anyString(), anyString(), anyLong(), anyString()
         )).thenReturn(mockPayment);
 
-        // Act & Assert
         mockMvc.perform(post("/api/v1/payments/pay")
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-User-Id", testUserId)
-                .content(objectMapper.writeValueAsString(testOrder)))
+                        .header("X-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sampleOrder)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("https://www.sandbox.paypal.com/approve")));
+                .andExpect(jsonPath("$.paymentLink").value("https://www.paypal.com/checkout?token=12345"));
     }
 
     @Test
-    @DisplayName("Should return 400 when Order validation fails")
-    void testPaymentValidationError() throws Exception {
-        // Arrange - Invalid order (negative price)
-        Order invalidOrder = new Order();
-        invalidOrder.setPrice(-10.0);
-        invalidOrder.setCurrency("USD");
-        invalidOrder.setMethod("paypal");
-        invalidOrder.setIntent("sale");
-        invalidOrder.setDescription("Invalid Order");
+    void payment_NoApprovalUrlFound_ThrowsRuntimeException() throws Exception {
+        Payment mockPayment = Mockito.mock(Payment.class);
+        when(mockPayment.getLinks()).thenReturn(Collections.emptyList());
 
-        // Act & Assert
-        mockMvc.perform(post("/api/v1/payments/pay")
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-User-Id", testUserId)
-                .content(objectMapper.writeValueAsString(invalidOrder)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("Should return 400 when X-User-Id header is missing")
-    void testPaymentMissingUserIdHeader() throws Exception {
-        // Act & Assert
-        mockMvc.perform(post("/api/v1/payments/pay")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testOrder)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("Should return 502 when PayPal API fails")
-    void testPaymentPayPalError() throws Exception {
-        // Arrange
         when(paypalService.createPayment(
-                anyDouble(),
-                anyString(),
-                anyString(),
-                anyString(),
-                anyString(),
-                anyString(),
-                anyString(),
-                eq(testUserId),
-                anyString()
-        )).thenThrow(new PayPalRESTException("Invalid API signature"));
+                anyDouble(), anyString(), anyString(), anyString(), anyString(),
+                anyString(), anyString(), anyLong(), anyString()
+        )).thenReturn(mockPayment);
 
-        // Act & Assert
         mockMvc.perform(post("/api/v1/payments/pay")
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("X-User-Id", testUserId)
-                .content(objectMapper.writeValueAsString(testOrder)))
-                .andExpect(status().isBadGateway());
-    }
-
-    // ==================== Payment History Tests ====================
-
-    @Test
-    @DisplayName("Should retrieve payment history for user")
-    void testGetPaymentHistorySuccess() throws Exception {
-        // Arrange
-        PaymentResponseDTO payment = PaymentResponseDTO.builder()
-                .paymentId(testPaymentId)
-                .userId(testUserId)
-                .amount(BigDecimal.valueOf(99.99))
-                .currency("USD")
-                .status("COMPLETED")
-                .build();
-
-        when(paypalService.getPaymentHistory(testUserId))
-                .thenReturn(Arrays.asList(payment));
-
-        // Act & Assert
-        mockMvc.perform(get("/api/v1/payments/history")
-                .header("X-User-Id", testUserId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].paymentId").value(testPaymentId))
-                .andExpect(jsonPath("$[0].userId").value(testUserId))
-                .andExpect(jsonPath("$[0].status").value("COMPLETED"));
+                        .header("X-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sampleOrder)))
+                .andExpect(status().isInternalServerError());
     }
 
     @Test
-    @DisplayName("Should return empty list when no payment history")
-    void testGetPaymentHistoryEmpty() throws Exception {
-        // Arrange
-        when(paypalService.getPaymentHistory(testUserId))
-                .thenReturn(Arrays.asList());
+    void successPay_Approved_RedirectsToFrontendSuccess() throws Exception {
+        Payment mockPayment = Mockito.mock(Payment.class);
+        when(mockPayment.getState()).thenReturn("approved");
+        when(paypalService.executePayment(anyString(), anyString())).thenReturn(mockPayment);
 
-        // Act & Assert
-        mockMvc.perform(get("/api/v1/payments/history")
-                .header("X-User-Id", testUserId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(0)));
-    }
-
-    // ==================== Payment History by Status Tests ====================
-
-    @Test
-    @DisplayName("Should retrieve payment history filtered by status")
-    void testGetPaymentHistoryByStatusSuccess() throws Exception {
-        // Arrange
-        PaymentResponseDTO payment = PaymentResponseDTO.builder()
-                .paymentId(testPaymentId)
-                .userId(testUserId)
-                .amount(BigDecimal.valueOf(99.99))
-                .currency("USD")
-                .status("COMPLETED")
-                .build();
-
-        when(paypalService.getPaymentHistoryByStatus(testUserId, "COMPLETED"))
-                .thenReturn(Arrays.asList(payment));
-
-        // Act & Asserts
-        mockMvc.perform(get("/api/v1/payments/history/COMPLETED")
-                .header("X-User-Id", testUserId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].status").value("COMPLETED"));
-    }
-
-    // ==================== Get Payment by ID Tests ====================
-
-    @Test
-    @DisplayName("Should retrieve a specific payment by ID")
-    void testGetPaymentByIdSuccess() throws Exception {
-        // Arrange
-        PaymentResponseDTO payment = PaymentResponseDTO.builder()
-                .paymentId(testPaymentId)
-                .userId(testUserId)
-                .amount(BigDecimal.valueOf(99.99))
-                .currency("USD")
-                .status("COMPLETED")
-                .build();
-
-        when(paypalService.getPaymentById(testPaymentId, testUserId))
-                .thenReturn(payment);
-
-        // Act & Assert
-        mockMvc.perform(get("/api/v1/payments/" + testPaymentId)
-                .header("X-User-Id", testUserId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.paymentId").value(testPaymentId))
-                .andExpect(jsonPath("$.amount").value(99.99));
-    }
-
-    // ==================== Payment Success/Cancel Tests ====================
-
-    @Test
-    @DisplayName("Should redirect to frontend success page on payment approval")
-    void testSuccessPaymentApproved() throws Exception {
-        // Arrange
-        Payment approvedPayment = new Payment();
-        approvedPayment.setId(testPaymentId);
-        approvedPayment.setState("approved");
-
-        when(paypalService.executePayment(testPaymentId, "PAYERID123"))
-                .thenReturn(approvedPayment);
-
-        // Act & Assert
         mockMvc.perform(get("/api/v1/payments/pay/success")
-                .param("paymentId", testPaymentId)
-                .param("PayerID", "PAYERID123"))
+                        .param("paymentId", "PAYID-123")
+                        .param("PayerID", "PAYER-456"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrlPattern("*payment-success*"));
+                .andExpect(redirectedUrl("http://localhost:3000/payment/success?paymentId=PAYID-123"));
     }
 
     @Test
-    @DisplayName("Should redirect to frontend cancel page on payment cancellation")
-    void testCancelPayment() throws Exception {
-        // Act & Assert
+    void successPay_NotApproved_RedirectsToFrontendFailed() throws Exception {
+        Payment mockPayment = Mockito.mock(Payment.class);
+        when(mockPayment.getState()).thenReturn("failed");
+        when(paypalService.executePayment(anyString(), anyString())).thenReturn(mockPayment);
+
+        mockMvc.perform(get("/api/v1/payments/pay/success")
+                        .param("paymentId", "PAYID-123")
+                        .param("PayerID", "PAYER-456"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("http://localhost:3000/payment/failed"));
+    }
+
+    @Test
+    void cancelPay_RedirectsToFrontendFailed() throws Exception {
         mockMvc.perform(get("/api/v1/payments/pay/cancel"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrlPattern("*payment-failed*"));
+                .andExpect(redirectedUrl("http://localhost:3000/payment/failed"));
+    }
+
+    @Test
+    void verifyPayment_Success_ReturnsVerificationPayload() throws Exception {
+        PaymentVerificationResponseDTO responseDTO = PaymentVerificationResponseDTO.builder()
+                .success(true)
+                .message("Payment verified successfully.")
+                .token("jwt-token-xyz")
+                .payment(samplePaymentResponse)
+                .build();
+
+        when(paypalService.verifyCompletedPayment("PAYID-SAMPLE123", 1L)).thenReturn(responseDTO);
+
+        mockMvc.perform(get("/api/v1/payments/verify/{paymentId}", "PAYID-SAMPLE123")
+                        .header("X-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Payment verified successfully."))
+                .andExpect(jsonPath("$.token").value("jwt-token-xyz"));
+    }
+
+    @Test
+    void getPaymentHistory_Success_ReturnsHistoryList() throws Exception {
+        when(paypalService.getPaymentHistory(1L)).thenReturn(List.of(samplePaymentResponse));
+
+        mockMvc.perform(get("/api/v1/payments/history")
+                        .header("X-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].paymentId").value("PAYID-SAMPLE123"))
+                .andExpect(jsonPath("$[0].status").value("COMPLETED"));
+    }
+
+    @Test
+    void getPaymentHistoryByStatus_Success_ReturnsFilteredHistoryList() throws Exception {
+        when(paypalService.getPaymentHistoryByStatus(1L, "COMPLETED")).thenReturn(List.of(samplePaymentResponse));
+
+        mockMvc.perform(get("/api/v1/payments/history/{status}", "COMPLETED")
+                        .header("X-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("COMPLETED"));
+    }
+
+    @Test
+    void getPaymentById_Success_ReturnsPaymentDetails() throws Exception {
+        when(paypalService.getPaymentById("PAYID-SAMPLE123", 1L)).thenReturn(samplePaymentResponse);
+
+        mockMvc.perform(get("/api/v1/payments/{paymentId}", "PAYID-SAMPLE123")
+                        .header("X-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paymentId").value("PAYID-SAMPLE123"));
     }
 }

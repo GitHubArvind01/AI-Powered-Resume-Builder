@@ -18,7 +18,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*; // Handles content() and status()
 
 @WebMvcTest(controllers = PdfExportController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -45,7 +45,8 @@ class PdfExportControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
-                .andExpect(contentType(MediaType.APPLICATION_PDF))
+                // FIXED: Changed from contentType(...) to content().contentType(...)
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=resume-100.pdf"))
                 .andExpect(content().bytes(mockBytes));
     }
@@ -57,7 +58,7 @@ class PdfExportControllerTest {
         TemplateExportRequest request = new TemplateExportRequest();
         request.setTemplateId("template-modern");
         request.setTemplateName("My Awesome Executive Profile!!! ");
-        request.setResumeData(new TemplateResumeData()); // minimal setup to pass @NotNull check if applicable
+        request.setResumeData(new TemplateResumeData());
 
         when(resumePdfExportService.exportTemplatePdf(any(TemplateExportRequest.class))).thenReturn(mockBytes);
 
@@ -65,7 +66,8 @@ class PdfExportControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(contentType(MediaType.APPLICATION_PDF))
+                // FIXED: Changed from contentType(...) to content().contentType(...)
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=resume-template-my-awesome-executive-profile-.pdf"))
                 .andExpect(content().bytes(mockBytes));
     }

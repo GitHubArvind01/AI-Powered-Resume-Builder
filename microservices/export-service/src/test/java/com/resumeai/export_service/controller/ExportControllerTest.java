@@ -47,6 +47,7 @@ class ExportControllerTest {
     void setUp() {
         validRequest = ExportRequestDTO.builder()
                 .resumeId(12L)
+                .format("PDF")
                 .templateId(3)
                 .customizations("{\"color\":\"#000000\"}")
                 .build();
@@ -62,6 +63,7 @@ class ExportControllerTest {
 
     @Test
     void exportPdf_ValidPayload_ReturnsResponse() throws Exception {
+        validRequest.setFormat("PDF");
         sampleResponse.setFormat("PDF");
         when(exportService.initiateExport(any(ExportRequestDTO.class), eq(1L))).thenReturn(sampleResponse);
 
@@ -76,6 +78,7 @@ class ExportControllerTest {
 
     @Test
     void exportDocx_ValidPayload_ReturnsResponse() throws Exception {
+        validRequest.setFormat("DOCX");
         sampleResponse.setFormat("DOCX");
         when(exportService.initiateExport(any(ExportRequestDTO.class), eq(1L))).thenReturn(sampleResponse);
 
@@ -89,6 +92,7 @@ class ExportControllerTest {
 
     @Test
     void exportJson_ValidPayload_ReturnsResponse() throws Exception {
+        validRequest.setFormat("JSON");
         sampleResponse.setFormat("JSON");
         when(exportService.initiateExport(any(ExportRequestDTO.class), eq(1L))).thenReturn(sampleResponse);
 

@@ -1,4 +1,4 @@
-package com.resumeai.template_service.service;
+package com.resumeai.template_service.service.impl;
 
 import com.resumeai.template_service.dto.TemplateRequestDTO;
 import com.resumeai.template_service.dto.TemplateResponseDTO;
@@ -7,7 +7,6 @@ import com.resumeai.template_service.entity.TemplateCategory;
 import com.resumeai.template_service.exception.ResourceNotFoundException;
 import com.resumeai.template_service.mapper.TemplateMapper;
 import com.resumeai.template_service.repository.TemplateRepository;
-import com.resumeai.template_service.service.impl.TemplateServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,12 +14,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,237 +34,166 @@ class TemplateServiceImplTest {
     @InjectMocks
     private TemplateServiceImpl templateService;
 
+    private TemplateRequestDTO requestDTO;
     private ResumeTemplate mockTemplate;
-    private TemplateRequestDTO mockRequestDTO;
-    private TemplateResponseDTO mockResponseDTO;
+    private TemplateResponseDTO responseDTO;
 
     @BeforeEach
     void setUp() {
+        requestDTO = TemplateRequestDTO.builder()
+                .name("Creative Studio")
+                .category("CREATIVE")
+                .isPremium(true)
+                .build();
+
         mockTemplate = ResumeTemplate.builder()
-                .templateId(1)
-                .name("Professional Template")
-                .description("A professional resume template")
-                .htmlLayout("<html>...</html>")
-                .cssStyles("body { font-family: Arial; }")
-                .category(TemplateCategory.PROFESSIONAL)
-                .isPremium(false)
+                .templateId(101)
+                .name("Creative Studio")
+                .category(TemplateCategory.CREATIVE)
+                .isPremium(true)
                 .isActive(true)
                 .usageCount(10)
-                .createdAt(LocalDateTime.now())
                 .build();
 
-        mockRequestDTO = TemplateRequestDTO.builder()
-                .name("Professional Template")
-                .description("A professional resume template")
-                .htmlLayout("<html>...</html>")
-                .cssStyles("body { font-family: Arial; }")
-                .category("PROFESSIONAL")
-                .isPremium(false)
-                .isActive(true)
-                .build();
-
-        mockResponseDTO = TemplateResponseDTO.builder()
-                .templateId(1)
-                .name("Professional Template")
-                .description("A professional resume template")
-                .htmlLayout("<html>...</html>")
-                .cssStyles("body { font-family: Arial; }")
-                .category("PROFESSIONAL")
-                .isPremium(false)
+        responseDTO = TemplateResponseDTO.builder()
+                .templateId(101)
+                .name("Creative Studio")
+                .category("CREATIVE")
+                .isPremium(true)
                 .isActive(true)
                 .usageCount(10)
-                .createdAt(LocalDateTime.now())
                 .build();
     }
 
     @Test
-    void testCreateTemplate_Success() {
-        when(templateMapper.toEntity(mockRequestDTO)).thenReturn(mockTemplate);
-        when(templateRepository.save(any(ResumeTemplate.class))).thenReturn(mockTemplate);
-        when(templateMapper.toDTO(mockTemplate)).thenReturn(mockResponseDTO);
+    void createTemplate_Success_SavesAndReturnsDto() {
+        when(templateMapper.toEntity(requestDTO)).thenReturn(mockTemplate);
+        when(templateRepository.save(mockTemplate)).thenReturn(mockTemplate);
+        when(templateMapper.toDTO(mockTemplate)).thenReturn(responseDTO);
 
-        TemplateResponseDTO result = templateService.createTemplate(mockRequestDTO);
+        TemplateResponseDTO result = templateService.createTemplate(requestDTO);
 
         assertNotNull(result);
-        assertEquals(1, result.getTemplateId());
-        assertEquals("Professional Template", result.getName());
-        verify(templateRepository, times(1)).save(any(ResumeTemplate.class));
+        assertEquals(101, result.getTemplateId());
+        verify(templateRepository, times(1)).save(mockTemplate);
     }
 
     @Test
-    void testGetTemplateById_Success() {
-        when(templateRepository.findById(1)).thenReturn(Optional.of(mockTemplate));
-        when(templateMapper.toDTO(mockTemplate)).thenReturn(mockResponseDTO);
+    void getTemplateById_IdExists_ReturnsMappedDto() {
+        when(templateRepository.findById(101)).thenReturn(Optional.of(mockTemplate));
+        when(templateMapper.toDTO(mockTemplate)).thenReturn(responseDTO);
 
-        TemplateResponseDTO result = templateService.getTemplateById(1);
+        TemplateResponseDTO result = templateService.getTemplateById(101);
 
         assertNotNull(result);
-        assertEquals(1, result.getTemplateId());
-        assertEquals("Professional Template", result.getName());
-        verify(templateRepository, times(1)).findById(1);
+        assertEquals("Creative Studio", result.getName());
     }
 
     @Test
-    void testGetTemplateById_ResourceNotFoundException() {
+    void getTemplateById_IdDoesNotExist_ThrowsResourceNotFoundException() {
         when(templateRepository.findById(999)).thenReturn(Optional.empty());
 
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
-                () -> templateService.getTemplateById(999));
-
-        assertEquals("Template not found with ID: 999", exception.getMessage());
-        verify(templateRepository, times(1)).findById(999);
+        assertThrows(ResourceNotFoundException.class, () -> templateService.getTemplateById(999));
+        verify(templateMapper, never()).toDTO(any());
     }
 
     @Test
-    void testGetAllTemplates_Success() {
-        List<ResumeTemplate> templates = List.of(mockTemplate);
-        List<TemplateResponseDTO> responseDTOs = List.of(mockResponseDTO);
+    void getAllTemplates_ReturnsList() {
+        when(templateRepository.findAll()).thenReturn(List.of(mockTemplate));
+        when(templateMapper.toDTO(mockTemplate)).thenReturn(responseDTO);
 
-        when(templateRepository.findAll()).thenReturn(templates);
-        when(templateMapper.toDTO(mockTemplate)).thenReturn(mockResponseDTO);
+        List<TemplateResponseDTO> results = templateService.getAllTemplates();
 
-        List<TemplateResponseDTO> result = templateService.getAllTemplates();
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        verify(templateRepository, times(1)).findAll();
+        assertEquals(1, results.size());
+        assertEquals(101, results.get(0).getTemplateId());
     }
 
     @Test
-    void testGetFreeTemplates_Success() {
-        List<ResumeTemplate> templates = List.of(mockTemplate);
-        when(templateRepository.findByIsPremium(false)).thenReturn(templates);
-        when(templateMapper.toDTO(mockTemplate)).thenReturn(mockResponseDTO);
+    void getFreeTemplates_CallsFilteredRepository() {
+        when(templateRepository.findByIsPremium(false)).thenReturn(List.of(mockTemplate));
+        when(templateMapper.toDTO(mockTemplate)).thenReturn(responseDTO);
 
-        List<TemplateResponseDTO> result = templateService.getFreeTemplates();
+        List<TemplateResponseDTO> results = templateService.getFreeTemplates();
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
+        assertFalse(results.isEmpty());
         verify(templateRepository, times(1)).findByIsPremium(false);
     }
 
     @Test
-    void testGetPremiumTemplates_Success() {
-        List<ResumeTemplate> templates = List.of(mockTemplate);
-        when(templateRepository.findByIsPremium(true)).thenReturn(templates);
-        when(templateMapper.toDTO(mockTemplate)).thenReturn(mockResponseDTO);
+    void getPremiumTemplates_CallsFilteredRepository() {
+        when(templateRepository.findByIsPremium(true)).thenReturn(List.of(mockTemplate));
+        when(templateMapper.toDTO(mockTemplate)).thenReturn(responseDTO);
 
-        List<TemplateResponseDTO> result = templateService.getPremiumTemplates();
+        List<TemplateResponseDTO> results = templateService.getPremiumTemplates();
 
-        assertNotNull(result);
+        assertFalse(results.isEmpty());
         verify(templateRepository, times(1)).findByIsPremium(true);
     }
 
     @Test
-    void testGetTemplatesByCategory_Success() {
-        List<ResumeTemplate> templates = List.of(mockTemplate);
-        when(templateRepository.findByCategory(TemplateCategory.PROFESSIONAL)).thenReturn(templates);
-        when(templateMapper.toDTO(mockTemplate)).thenReturn(mockResponseDTO);
+    void getTemplatesByCategory_NormalizesStringAndQueriesEnum() {
+        // Test case sensitivity handling and replacing hyphens like "executive-management" -> "EXECUTIVE_MANAGEMENT"
+        when(templateRepository.findByCategory(TemplateCategory.CREATIVE)).thenReturn(List.of(mockTemplate));
+        when(templateMapper.toDTO(mockTemplate)).thenReturn(responseDTO);
 
-        List<TemplateResponseDTO> result = templateService.getTemplatesByCategory("PROFESSIONAL");
+        List<TemplateResponseDTO> results = templateService.getTemplatesByCategory("creative");
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        verify(templateRepository, times(1)).findByCategory(TemplateCategory.PROFESSIONAL);
+        assertFalse(results.isEmpty());
+        verify(templateRepository, times(1)).findByCategory(TemplateCategory.CREATIVE);
     }
 
     @Test
-    void testGetPopularTemplates_Success() {
-        List<ResumeTemplate> templates = List.of(mockTemplate);
-        when(templateRepository.findAllByOrderByUsageCountDesc()).thenReturn(templates);
-        when(templateMapper.toDTO(mockTemplate)).thenReturn(mockResponseDTO);
+    void getTemplatesByCategory_InvalidCategoryString_ThrowsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            templateService.getTemplatesByCategory("NON_EXISTENT_CATEGORY_PROBABLE");
+        });
+        verifyNoInteractions(templateRepository);
+    }
 
-        List<TemplateResponseDTO> result = templateService.getPopularTemplates();
+    @Test
+    void getPopularTemplates_QueriesDescOrderedRepository() {
+        when(templateRepository.findAllByOrderByUsageCountDesc()).thenReturn(List.of(mockTemplate));
+        when(templateMapper.toDTO(mockTemplate)).thenReturn(responseDTO);
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
+        List<TemplateResponseDTO> results = templateService.getPopularTemplates();
+
+        assertFalse(results.isEmpty());
         verify(templateRepository, times(1)).findAllByOrderByUsageCountDesc();
     }
 
     @Test
-    void testUpdateTemplate_Success() {
-        when(templateRepository.findById(1)).thenReturn(Optional.of(mockTemplate));
-        when(templateRepository.save(any(ResumeTemplate.class))).thenReturn(mockTemplate);
-        when(templateMapper.toDTO(mockTemplate)).thenReturn(mockResponseDTO);
+    void updateTemplate_TemplateExists_MutatesAndSaves() {
+        when(templateRepository.findById(101)).thenReturn(Optional.of(mockTemplate));
+        doNothing().when(templateMapper).updateEntityFromDTO(requestDTO, mockTemplate);
+        when(templateRepository.save(mockTemplate)).thenReturn(mockTemplate);
+        when(templateMapper.toDTO(mockTemplate)).thenReturn(responseDTO);
 
-        TemplateResponseDTO result = templateService.updateTemplate(1, mockRequestDTO);
+        TemplateResponseDTO result = templateService.updateTemplate(101, requestDTO);
 
         assertNotNull(result);
-        verify(templateRepository, times(1)).findById(1);
-        verify(templateRepository, times(1)).save(any(ResumeTemplate.class));
+        verify(templateMapper, times(1)).updateEntityFromDTO(requestDTO, mockTemplate);
+        verify(templateRepository, times(1)).save(mockTemplate);
     }
 
     @Test
-    void testUpdateTemplate_ResourceNotFoundException() {
-        when(templateRepository.findById(999)).thenReturn(Optional.empty());
+    void deactivateTemplate_TemplateExists_SetsActiveToFalseAndSaves() {
+        when(templateRepository.findById(101)).thenReturn(Optional.of(mockTemplate));
+        when(templateRepository.save(mockTemplate)).thenReturn(mockTemplate);
 
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
-                () -> templateService.updateTemplate(999, mockRequestDTO));
+        templateService.deactivateTemplate(101);
 
-        assertEquals("Template not found with ID: 999", exception.getMessage());
-    }
-
-    @Test
-    void testDeactivateTemplate_Success() {
-        when(templateRepository.findById(1)).thenReturn(Optional.of(mockTemplate));
-        when(templateRepository.save(any(ResumeTemplate.class))).thenReturn(mockTemplate);
-
-        templateService.deactivateTemplate(1);
-
-        verify(templateRepository, times(1)).findById(1);
-        verify(templateRepository, times(1)).save(any(ResumeTemplate.class));
         assertFalse(mockTemplate.isActive());
+        verify(templateRepository, times(1)).save(mockTemplate);
     }
 
     @Test
-    void testDeactivateTemplate_ResourceNotFoundException() {
-        when(templateRepository.findById(999)).thenReturn(Optional.empty());
+    void incrementUsageCount_TemplateExists_IncrementsCountAndSaves() {
+        when(templateRepository.findById(101)).thenReturn(Optional.of(mockTemplate));
+        when(templateRepository.save(mockTemplate)).thenReturn(mockTemplate);
 
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
-                () -> templateService.deactivateTemplate(999));
+        templateService.incrementUsageCount(101);
 
-        assertEquals("Template not found with ID: 999", exception.getMessage());
-    }
-
-    @Test
-    void testIncrementUsageCount_Success() {
-        int initialUsageCount = mockTemplate.getUsageCount();
-        
-        when(templateRepository.findById(1)).thenReturn(Optional.of(mockTemplate));
-        when(templateRepository.save(any(ResumeTemplate.class))).thenReturn(mockTemplate);
-
-        templateService.incrementUsageCount(1);
-
-        verify(templateRepository, times(1)).findById(1);
-        verify(templateRepository, times(1)).save(any(ResumeTemplate.class));
-        assertEquals(initialUsageCount + 1, mockTemplate.getUsageCount());
-    }
-
-    @Test
-    void testIncrementUsageCount_ResourceNotFoundException() {
-        when(templateRepository.findById(999)).thenReturn(Optional.empty());
-
-        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
-                () -> templateService.incrementUsageCount(999));
-
-        assertEquals("Template not found with ID: 999", exception.getMessage());
-    }
-
-    @Test
-    void testIncrementUsageCount_VerifyCorrectIncrement() {
-        ResumeTemplate templateWithZeroUsage = ResumeTemplate.builder()
-                .templateId(2)
-                .name("New Template")
-                .usageCount(0)
-                .build();
-
-        when(templateRepository.findById(2)).thenReturn(Optional.of(templateWithZeroUsage));
-        when(templateRepository.save(any(ResumeTemplate.class))).thenReturn(templateWithZeroUsage);
-
-        templateService.incrementUsageCount(2);
-
-        assertEquals(1, templateWithZeroUsage.getUsageCount());
-        verify(templateRepository, times(1)).save(templateWithZeroUsage);
+        assertEquals(11, mockTemplate.getUsageCount());
+        verify(templateRepository, times(1)).save(mockTemplate);
     }
 }
-

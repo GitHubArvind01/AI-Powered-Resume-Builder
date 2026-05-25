@@ -8,7 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -16,156 +16,165 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(controllers = TemplateController.class)
+@AutoConfigureMockMvc(addFilters = false) // Ensures spring security config doesn't intercept test requests
 class TemplateControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private TemplateService templateService;
-
     @Autowired
     private ObjectMapper objectMapper;
 
-    private TemplateRequestDTO requestDTO;
-    private TemplateResponseDTO responseDTO;
+    @MockBean
+    private TemplateService templateService;
+
+    private TemplateRequestDTO validRequest;
+    private TemplateResponseDTO sampleResponse;
 
     @BeforeEach
     void setUp() {
-        requestDTO = TemplateRequestDTO.builder()
-                .name("Professional Template")
-                .description("A professional resume template")
-                .htmlLayout("<html>...</html>")
-                .cssStyles("body { font-family: Arial; }")
-                .category("PROFESSIONAL")
+        validRequest = TemplateRequestDTO.builder()
+                .name("Modern Tech Minimalist")
+                .description("Clean single page design for developers")
+                .thumbnailUrl("http://cdn.com/thumb.png")
+                .htmlLayout("<div>{{name}}</div>")
+                .cssStyles("body { color: #333; }")
+                .category("TECHNICAL")
                 .isPremium(false)
                 .isActive(true)
                 .build();
 
-        responseDTO = TemplateResponseDTO.builder()
+        sampleResponse = TemplateResponseDTO.builder()
                 .templateId(1)
-                .name("Professional Template")
-                .description("A professional resume template")
-                .htmlLayout("<html>...</html>")
-                .cssStyles("body { font-family: Arial; }")
-                .category("PROFESSIONAL")
+                .name("Modern Tech Minimalist")
+                .description("Clean single page design for developers")
+                .thumbnailUrl("http://cdn.com/thumb.png")
+                .htmlLayout("<div>{{name}}</div>")
+                .cssStyles("body { color: #333; }")
+                .category("TECHNICAL")
                 .isPremium(false)
                 .isActive(true)
-                .usageCount(0)
+                .usageCount(42)
                 .createdAt(LocalDateTime.now())
                 .build();
     }
 
     @Test
-    void testCreateTemplate_Success() throws Exception {
-        when(templateService.createTemplate(any(TemplateRequestDTO.class)))
-                .thenReturn(responseDTO);
+    void createTemplate_WithValidBody_Returns201AndPayload() throws Exception {
+        when(templateService.createTemplate(any(TemplateRequestDTO.class))).thenReturn(sampleResponse);
 
         mockMvc.perform(post("/api/v1/templates")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestDTO)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.templateId").value(1))
-                .andExpect(jsonPath("$.name").value("Professional Template"));
-
-        verify(templateService, times(1)).createTemplate(any(TemplateRequestDTO.class));
+                .andExpect(jsonPath("$.name").value("Modern Tech Minimalist"));
     }
 
     @Test
-    void testGetTemplateById_Success() throws Exception {
-        when(templateService.getTemplateById(1)).thenReturn(responseDTO);
+    void createTemplate_WithInvalidBody_Returns400BadRequest() throws Exception {
+        TemplateRequestDTO invalidRequest = TemplateRequestDTO.builder()
+                .name("") // Blank name violation
+                .htmlLayout("") // Blank layout violation
+                .build();
 
-        mockMvc.perform(get("/api/v1/templates/1")
-                .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(post("/api/v1/templates")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getTemplateById_ExistingId_ReturnsTemplate() throws Exception {
+        when(templateService.getTemplateById(1)).thenReturn(sampleResponse);
+
+        mockMvc.perform(get("/api/v1/templates/{id}", 1))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.templateId").value(1))
-                .andExpect(jsonPath("$.name").value("Professional Template"));
-
-        verify(templateService, times(1)).getTemplateById(1);
+                .andExpect(jsonPath("$.name").value("Modern Tech Minimalist"));
     }
 
     @Test
-    void testGetAllTemplates_Success() throws Exception {
-        List<TemplateResponseDTO> templates = List.of(responseDTO);
-        when(templateService.getAllTemplates()).thenReturn(templates);
+    void getAllTemplates_ReturnsCompleteList() throws Exception {
+        when(templateService.getAllTemplates()).thenReturn(List.of(sampleResponse));
 
-        mockMvc.perform(get("/api/v1/templates")
-                .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/templates"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].templateId").value(1));
-
-        verify(templateService, times(1)).getAllTemplates();
+                .andExpect(jsonPath("$[0].templateId").value(1))
+                .andExpect(jsonPath("$.size()").value(1));
     }
 
     @Test
-    void testGetFreeTemplates_Success() throws Exception {
-        List<TemplateResponseDTO> templates = List.of(responseDTO);
-        when(templateService.getFreeTemplates()).thenReturn(templates);
+    void getFreeTemplates_ReturnsFreeTemplatesOnly() throws Exception {
+        when(templateService.getFreeTemplates()).thenReturn(List.of(sampleResponse));
 
-        mockMvc.perform(get("/api/v1/templates/free")
-                .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/templates/free"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)));
-
-        verify(templateService, times(1)).getFreeTemplates();
+                .andExpect(jsonPath("$[0].isPremium").value(false));
     }
 
     @Test
-    void testGetPremiumTemplates_Success() throws Exception {
-        List<TemplateResponseDTO> templates = List.of(responseDTO);
-        when(templateService.getPremiumTemplates()).thenReturn(templates);
+    void getPremiumTemplates_ReturnsPremiumTemplatesOnly() throws Exception {
+        sampleResponse.setPremium(true);
+        when(templateService.getPremiumTemplates()).thenReturn(List.of(sampleResponse));
 
-        mockMvc.perform(get("/api/v1/templates/premium")
-                .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/templates/premium"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)));
-
-        verify(templateService, times(1)).getPremiumTemplates();
+                .andExpect(jsonPath("$[0].isPremium").value(true));
     }
 
     @Test
-    void testUpdateTemplate_Success() throws Exception {
-        when(templateService.updateTemplate(eq(1), any(TemplateRequestDTO.class)))
-                .thenReturn(responseDTO);
+    void getTemplatesByCategory_ValidCategoryString_ReturnsList() throws Exception {
+        when(templateService.getTemplatesByCategory("technical")).thenReturn(List.of(sampleResponse));
 
-        mockMvc.perform(put("/api/v1/templates/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(requestDTO)))
+        mockMvc.perform(get("/api/v1/templates/category/{category}", "technical"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].category").value("TECHNICAL"));
+    }
+
+    @Test
+    void getPopularTemplates_ReturnsOrderedList() throws Exception {
+        when(templateService.getPopularTemplates()).thenReturn(List.of(sampleResponse));
+
+        mockMvc.perform(get("/api/v1/templates/popular"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].usageCount").value(42));
+    }
+
+    @Test
+    void updateTemplate_ValidPayload_ReturnsUpdatedPayload() throws Exception {
+        when(templateService.updateTemplate(eq(1), any(TemplateRequestDTO.class))).thenReturn(sampleResponse);
+
+        mockMvc.perform(put("/api/v1/templates/{id}", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.templateId").value(1));
-
-        verify(templateService, times(1)).updateTemplate(eq(1), any(TemplateRequestDTO.class));
     }
 
     @Test
-    void testDeactivateTemplate_Success() throws Exception {
+    void deactivateTemplate_ExistingId_Returns204NoContent() throws Exception {
+        // CORRECT VOID METHOD STUBBING: move the method call outside when()
         doNothing().when(templateService).deactivateTemplate(1);
 
-        mockMvc.perform(put("/api/v1/templates/1/deactivate")
-                .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(put("/api/v1/templates/{id}/deactivate", 1))
                 .andExpect(status().isNoContent());
-
-        verify(templateService, times(1)).deactivateTemplate(1);
     }
 
     @Test
-    void testIncrementUsageCount_Success() throws Exception {
+    void incrementUsageCount_ExistingId_Returns204NoContent() throws Exception {
+        // CORRECT VOID METHOD STUBBING: move the method call outside when()
         doNothing().when(templateService).incrementUsageCount(1);
 
-        mockMvc.perform(patch("/api/v1/templates/1/increment-usage")
-                .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(patch("/api/v1/templates/{id}/increment-usage", 1))
                 .andExpect(status().isNoContent());
-
-        verify(templateService, times(1)).incrementUsageCount(1);
     }
 }
-

@@ -72,7 +72,7 @@ public class ResumeResource {
 
      /**
       * Create a new resume
-      * ✅ SECURITY: userId is extracted from X-User-Id header set by API Gateway
+      * SECURITY: userId is extracted from X-User-Id header set by API Gateway
       */
      @PostMapping
      @Operation(
@@ -163,7 +163,7 @@ public class ResumeResource {
 
      /**
       * Update a resume
-      * ✅ SECURITY: Ownership verification ensures user can only update their own resume
+      * SECURITY: Ownership verification ensures user can only update their own resume
       */
      @PutMapping("/{id}")
      @Operation(
@@ -200,7 +200,7 @@ public class ResumeResource {
 
      /**
       * Delete a resume
-      * ✅ SECURITY: Ownership verification ensures user can only delete their own resume
+      * SECURITY: Ownership verification ensures user can only delete their own resume
       */
      @DeleteMapping("/{id}")
      @Operation(
@@ -311,7 +311,7 @@ public class ResumeResource {
     }
 
     /**
-     * ✅ NEW ENDPOINT: Check if resume exists for a user (for service-to-service validation)
+     * NEW ENDPOINT: Check if resume exists for a user (for service-to-service validation)
      * Used by resume-section-service to verify ownership before creating sections
      */
     @GetMapping("/{id}/user/{userId}/exists")

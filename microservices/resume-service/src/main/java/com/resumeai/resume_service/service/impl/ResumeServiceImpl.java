@@ -33,7 +33,7 @@ public class ResumeServiceImpl implements ResumeService {
         try {
             log.info("Creating resume for user ID: {}", userId);
 
-            // ✅ VALIDATION: Verify that userId is not null (passed from API Gateway header)
+            // VALIDATION: Verify that userId is not null (passed from API Gateway header)
             if (userId == null) {
                 throw new IllegalArgumentException("User ID cannot be null");
             }
@@ -101,7 +101,7 @@ public class ResumeServiceImpl implements ResumeService {
             Resume resume = resumeRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Resume not found with ID: " + id));
 
-            // ✅ SECURITY: Verify ownership before allowing update
+            // SECURITY: Verify ownership before allowing update
             verifyResumeOwnership(resume, userId);
 
             ResumeMapper.updateEntityFromDTO(resumeRequestDTO, resume);
@@ -126,7 +126,7 @@ public class ResumeServiceImpl implements ResumeService {
             Resume resume = resumeRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Resume not found with ID: " + id));
 
-            // ✅ VALIDATION 3: Verify ownership before deletion
+            // VALIDATION 3: Verify ownership before deletion
             verifyResumeOwnership(resume, userId);
 
             resumeRepository.deleteById(id);

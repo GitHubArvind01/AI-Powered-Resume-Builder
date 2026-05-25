@@ -39,7 +39,7 @@ public class NotificationController {
     @GetMapping("/health")
     @Operation(summary = "Service health check")
     public ResponseEntity<String> health() {
-        return ResponseEntity.ok("Notification Service is running ✅");
+        return ResponseEntity.ok("Notification Service is running");
     }
 
     /**
